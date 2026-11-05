@@ -40,6 +40,7 @@
     <button class="btn" id="btn-data" type="button">数据</button>
     <button class="btn" id="btn-atlas" type="button">星图目录</button>
     <button class="btn" id="btn-about" type="button">关于</button>
+    <button class="btn menu-btn" id="btn-menu" type="button" aria-label="菜单">☰</button>
   </div>
 </header>
 
@@ -102,6 +103,27 @@
   </div>
 </div>
 
+<div id="menu" class="hidden">
+  <div class="menu-veil" id="menu-veil"></div>
+  <div class="menu-sheet" role="menu">
+    <div class="menu-head"><span>操作</span><button class="icon-btn" id="menu-close" type="button" aria-label="关闭">✕</button></div>
+    <button class="menu-item" data-act="add-file" type="button"><i>＋</i>添加文件</button>
+    <button class="menu-item" data-act="add-folder" type="button"><i>＋</i>添加文件夹</button>
+    <button class="menu-item" data-act="atlas" type="button"><i>◎</i>星图目录</button>
+    <button class="menu-item" data-act="data" type="button"><i>⛁</i>数据</button>
+    <button class="menu-item" data-act="about" type="button"><i>?</i>关于</button>
+    <button class="menu-item" data-act="back" type="button"><i>‹</i>返回</button>
+    <div class="menu-pad" aria-label="方向键">
+      <button class="pad-btn" data-nav="up" type="button">▲</button>
+      <div class="pad-row">
+        <button class="pad-btn" data-nav="left" type="button">◀</button>
+        <button class="pad-btn pad-ok" data-nav="enter" type="button">⏎</button>
+        <button class="pad-btn" data-nav="right" type="button">▶</button>
+      </div>
+      <button class="pad-btn" data-nav="down" type="button">▼</button>
+    </div>
+  </div>
+</div>
 <div id="media" class="hidden" role="dialog" aria-modal="true">
   <div class="media-veil" id="media-veil"></div>
   <div class="media-card">

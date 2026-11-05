@@ -64,6 +64,12 @@
     return { title, chapters };
   }
 
+  const REL_LABEL = {
+    project: '同项目 · 引力', reference: '引用 · 星座', embed: '嵌入 · 星座',
+    tag: '同标签 · 星桥', timeline: '时间轴 · 轨道', similar: '相似 · 星桥'
+  };
+  function relLabel(rel) { return REL_LABEL[rel] || rel; }
+
   function esc(s) {
     return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
@@ -119,6 +125,7 @@
       this.renderAboutStats();
       $("#hint").innerHTML = hintHtml(false);
       this.bindData();
+      this.bindMenu();
       const t = index.totals || { docs: index.docs.length };
       $('#search').placeholder = '搜索 ' + t.docs + ' 篇文本';
       $('#atlas-kicker').textContent = t.docs + ' TEXTS · ' + SY.NEBULAE.length + ' NEBULAE';
@@ -436,6 +443,29 @@
       this.r.onStarClick = (star) => {
         if (star) this.openDoc(star.doc);
       };
+      this.r.onEdgeHover = (edge, x, y) => {
+        const tip = $('#tooltip');
+        if (!edge) {
+          if (!this.r.hoverStar) { tip.classList.remove('is-on'); tip.classList.add('hidden'); }
+          return;
+        }
+        const a = this.docsById.get(edge.edge.source);
+        const b = this.docsById.get(edge.edge.target);
+        if (!a || !b) return;
+        tip.innerHTML = '<div class="tt-kicker">' + relLabel(edge.edge.relation) + '</div>' +
+          '<div class="tt-title">' + esc(a.t) + ' ↔ ' + esc(b.t) + '</div>' +
+          '<div class="tt-hint">点击查看关系</div>';
+        tip.classList.remove('hidden');
+        const w = Math.min(320, Math.max(220, tip.offsetWidth || 280));
+        tip.style.left = Math.min(Math.max(x + 16, 12), window.innerWidth - w - 12) + 'px';
+        tip.style.top = Math.min(Math.max(y + 16, 12), window.innerHeight - 130) + 'px';
+        tip.classList.add('is-on');
+      };
+      this.r.onEdgeClick = (edge) => {
+        const a = this.docsById.get(edge.edge.source);
+        const b = this.docsById.get(edge.edge.target);
+        if (a && b) this.toast(relLabel(edge.edge.relation) + ' · ' + a.t + ' → ' + b.t);
+      };
       this.r.onSwitch = (mode, group) => {
         const hint = $('#hint');
         if (mode === 'inside') {
@@ -444,7 +474,7 @@
           $('#crumb-nebula').textContent = n.cn;
           $('#crumb-nebula').classList.add('is-on');
           document.title = n.cn + ' · ' + SY.CONFIG.title;
-          this.cards.forEach((el) => { el.style.opacity = '0'; });
+          this.cards.forEach((el) => { el.style.opacity = '0'; el.style.pointerEvents = 'none'; });
           this.r.hoverStar = null;
           this.hoverStarRef = null;
           this.tipDoc = null;
@@ -582,18 +612,11 @@
       $('#data-close').addEventListener('click', close);
       panel.addEventListener('click', (e) => { if (e.target === panel) close(); });
 
-      $('#btn-pick-folder').addEventListener('click', () => $('#pick-folder').click());
+      $('#btn-pick-folder').addEventListener('click', () => this.triggerFolder());
       $('#btn-pick-json').addEventListener('click', () => $('#pick-json').click());
       $('#btn-pick-files').addEventListener('click', () => $('#pick-files').click());
       $('#btn-add-file').addEventListener('click', () => $('#pick-files').click());
-      $('#btn-add-folder').addEventListener('click', () => {
-        if (/Android/i.test(navigator.userAgent)) {
-          this.toast('安卓不支持选文件夹，已切换为多选文件');
-          $('#pick-files').click();
-          return;
-        }
-        $('#pick-folder').click();
-      });
+      $('#btn-add-folder').addEventListener('click', () => this.triggerFolder());
 
       $('#pick-files').addEventListener('change', async (e) => {
         const files = e.target.files;
@@ -701,9 +724,81 @@
       setTimeout(() => location.reload(), 600);
     },
 
+    /* ---------------- 菜单 / 方向键 / 关联边 ---------------- */
+    anyOverlay() {
+      return this.reader.open
+        || !$('#media').classList.contains('hidden')
+        || !$('#menu').classList.contains('hidden')
+        || !$('#data-panel').classList.contains('hidden')
+        || !$('#about').classList.contains('hidden')
+        || $('#atlas').classList.contains('is-open');
+    },
+
+    triggerFolder() {
+      if (/Android/i.test(navigator.userAgent)) {
+        this.toast('安卓不支持选文件夹，已切换为多选文件');
+        $('#pick-files').click();
+        return;
+      }
+      $('#pick-folder').click();
+    },
+
+    bindMenu() {
+      const menu = $('#menu');
+      const close = () => menu.classList.add('hidden');
+      $('#btn-menu').addEventListener('click', () => menu.classList.remove('hidden'));
+      $('#menu-close').addEventListener('click', close);
+      $('#menu-veil').addEventListener('click', close);
+
+      menu.querySelectorAll('.menu-item').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const act = btn.dataset.act;
+          close();
+          if (act === 'add-file') $('#pick-files').click();
+          else if (act === 'add-folder') this.triggerFolder();
+          else if (act === 'atlas') this.toggleAtlas();
+          else if (act === 'data') $('#btn-data').click();
+          else if (act === 'about') $('#btn-about').click();
+          else if (act === 'back') this.goBack();
+        });
+      });
+
+      menu.querySelectorAll('[data-nav]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const k = btn.dataset.nav;
+          close();
+          if (k === 'enter') this.navEnter();
+          else this.navFocus(k);
+        });
+      });
+    },
+
+    /** 方向键 / 触屏方向盘：星系里切换星云，星云内部按方向找最近恒星 */
+    navFocus(dir) {
+      if (this.anyOverlay()) return;
+      if (this.r.mode === 'inside') { this.r.focusNearest(dir); return; }
+      const n = SY.NEBULAE.length;
+      if (!n) return;
+      let i = this.r.hoverNebula;
+      if (i < 0) i = (dir === 'left' || dir === 'up') ? n - 1 : 0;
+      else i = (i + ((dir === 'right' || dir === 'down') ? 1 : -1) + n) % n;
+      this.r.setHoverNebula(i);
+    },
+
+    navEnter() {
+      if (this.anyOverlay()) return;
+      if (this.r.mode === 'inside') {
+        const s = this.r.hoverStar;
+        if (s) this.openDoc(s.doc);
+        return;
+      }
+      this.enterNebula(this.r.hoverNebula >= 0 ? this.r.hoverNebula : 0);
+    },
+
     /* ---------------- global keys ---------------- */
     /* 统一的返回逻辑：先关浮层，再退出星云，最后才是退出应用 */
     goBack() {
+      if (!$('#menu').classList.contains('hidden')) { $('#menu').classList.add('hidden'); return true; }
       if (!$('#media').classList.contains('hidden')) { this.closeMedia(); return true; }
       if (this.reader.open) { this.closeReader(); return true; }
       if (!$('#data-panel').classList.contains('hidden')) { this.closeData(); return true; }
@@ -740,6 +835,12 @@
         } else if (this.reader.open) {
           if (e.key === 'ArrowLeft') this.gotoChapter(this.reader.idx - 1);
           if (e.key === 'ArrowRight') this.gotoChapter(this.reader.idx + 1);
+        } else if (e.key.indexOf('Arrow') === 0) {
+          this.navFocus(e.key.slice(5).toLowerCase());
+          e.preventDefault();
+        } else if (e.key === 'Enter') {
+          this.navEnter();
+          e.preventDefault();
         }
       });
     },
@@ -768,7 +869,7 @@
 
     update() {
       this.updateBackButton();
-      if (this.r.mode === 'galaxy' && !this.r.trans) this.updateCards();
+      if (!this.r.trans) this.updateCards();
       if (this.r.trans && this.r.trans.dir === 'in') {
         this.cards.forEach((el) => { el.style.opacity = '0'; });
       }

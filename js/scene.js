@@ -50,6 +50,9 @@
       this.activeGroup = null;
       this.hoverNebula = -1;
       this.hoverStar = null;
+      this.hoverEdge = null;
+      this.focusStar = null;
+      this.edgeScreen = [];
       this.trans = null;
       this.pointer = { x: 0, y: 0, down: false, drag: false, lx: 0, ly: 0, moved: 0 };
       this.pointers = new Map();
@@ -69,6 +72,8 @@
       this.onNebulaClick = null;
       this.onStarHover = null;
       this.onStarClick = null;
+      this.onEdgeHover = null;
+      this.onEdgeClick = null;
       this.onSwitch = null;
       this.onDiveEnd = null;
       this.onSurfaceEnd = null;
@@ -87,6 +92,9 @@
       this.activeGroup = null;
       this.trans = null;
       this.hoverStar = null;
+      this.hoverEdge = null;
+      this.focusStar = null;
+      this.edgeScreen = [];
       this.hoverNebula = -1;
       this.orbit = { az: 0.0, el: 0.055, dist: 12.4 };
       this.cam = { eye: [0, 0.4, 12.4], target: [0, 0, 0.4], fov: 43 * Math.PI / 180 };
@@ -126,6 +134,9 @@
       this.canvas.addEventListener('pointerleave', () => {
         if (this.hoverStar) {
           this.hoverStar = null;
+      this.hoverEdge = null;
+      this.focusStar = null;
+      this.edgeScreen = [];
           this.canvas.style.cursor = 'default';
           if (this.onStarHover) this.onStarHover(null);
         }
@@ -623,8 +634,17 @@
           }
         }
       }
-      if (this.mode === 'galaxy') this.pickNebula(e.clientX, e.clientY);
-      else this.pickStar(e.clientX, e.clientY);
+      if (this.mode === 'galaxy') {
+        this.pickNebula(e.clientX, e.clientY);
+      } else {
+        const s = this.pickStar(e.clientX, e.clientY);
+        const edge = s ? null : this.pickEdge(e.clientX, e.clientY);
+        if (edge !== this.hoverEdge) {
+          this.hoverEdge = edge;
+          if (edge) this.canvas.style.cursor = 'pointer';
+          if (this.onEdgeHover) this.onEdgeHover(edge, e.clientX, e.clientY);
+        }
+      }
     }
 
     onPointerUp(e) {
@@ -641,7 +661,12 @@
         if (hit >= 0 && this.onNebulaClick) this.onNebulaClick(hit);
       } else {
         const s = this.pickStar(e.clientX, e.clientY);
-        if (s && this.onStarClick) this.onStarClick(s);
+        if (s) {
+          if (this.onStarClick) this.onStarClick(s);
+          return;
+        }
+        const edge = this.pickEdge(e.clientX, e.clientY);
+        if (edge && this.onEdgeClick) this.onEdgeClick(edge);
       }
     }
 
@@ -691,6 +716,69 @@
         if (this.onStarHover) this.onStarHover(best, px, py);
       }
       return best;
+    }
+
+    /* 点到线段的距离 */
+    distToSegment(px, py, ax, ay, bx, by) {
+      const dx = bx - ax, dy = by - ay;
+      const len2 = dx * dx + dy * dy;
+      let t = len2 > 0 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
+      t = Math.max(0, Math.min(1, t));
+      return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+    }
+
+    /** 屏幕坐标 → 关联边（8px 容差） */
+    pickEdge(px, py) {
+      if (this.mode !== 'inside' || !this.activeGroup) return null;
+      const g = this.groups[this.activeGroup];
+      if (!g || !g.edgeSegs) return null;
+      let best = null, bestD = 8;
+      for (const e of this.edgeScreen) {
+        const d = this.distToSegment(px, py, e.ax, e.ay, e.bx, e.by);
+        if (d < bestD) { bestD = d; best = g.edgeSegs[e.index]; }
+      }
+      return best;
+    }
+
+    /** 方向键 / 触屏方向盘：把焦点移到该方向最近的天体 */
+    focusNearest(dir) {
+      if (this.mode !== 'inside' || !this.activeGroup) return null;
+      const g = this.groups[this.activeGroup];
+      if (!g || !g.list.length) return null;
+      const visible = g.list.filter((s) => s.screen.visible);
+      if (!visible.length) return null;
+
+      let cur = this.hoverStar;
+      if (!cur || !cur.screen.visible) {
+        cur = visible.slice().sort((a, b) => a.screen.y - b.screen.y)[0];
+        this.hoverStar = cur;
+        if (this.onStarHover) this.onStarHover(cur, cur.screen.x, cur.screen.y);
+        return cur;
+      }
+
+      const vx = dir === 'left' ? -1 : dir === 'right' ? 1 : 0;
+      const vy = dir === 'up' ? -1 : dir === 'down' ? 1 : 0;
+      let best = null, bestScore = Infinity;
+      for (const s of visible) {
+        if (s === cur) continue;
+        const dx = s.screen.x - cur.screen.x;
+        const dy = s.screen.y - cur.screen.y;
+        const along = dx * vx + dy * vy;
+        if (along <= 6) continue;
+        const perp = Math.abs(dx * vy - dy * vx);
+        const score = along + perp * 2.2;
+        if (score < bestScore) { bestScore = score; best = s; }
+      }
+      if (!best) return cur;
+      this.hoverStar = best;
+      if (this.onStarHover) this.onStarHover(best, best.screen.x, best.screen.y);
+      return best;
+    }
+
+    /** 键盘焦点：高亮某个恒星（复用悬停 UI） */
+    focusOn(star) {
+      this.hoverStar = star || null;
+      if (this.onStarHover) this.onStarHover(this.hoverStar, star ? star.screen.x : 0, star ? star.screen.y : 0);
     }
 
     /* ---------------- render ---------------- */
@@ -878,6 +966,27 @@
         gl.drawArrays(gl.LINES, 0, g.edgeCount * 2);
       }
 
+      if (this.hoverEdge) {
+        const seg = this.hoverEdge;
+        if (!this.edgeHoverBuf) {
+          this.edgeHoverBuf = gl.createBuffer();
+          this.edgeHoverVAO = gl.createVertexArray();
+          gl.bindVertexArray(this.edgeHoverVAO);
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.edgeHoverBuf);
+          gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(6), gl.DYNAMIC_DRAW);
+          gl.enableVertexAttribArray(0);
+          gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+          gl.bindVertexArray(null);
+        }
+        const arr = new Float32Array([seg.a[0], seg.a[1], seg.a[2], seg.b[0], seg.b[1], seg.b[2]]);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.edgeHoverBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW);
+        gl.uniform3f(lp.u.uColor, 1.0, 0.82, 0.38);
+        gl.uniform1f(lp.u.uAlpha, 0.95);
+        gl.bindVertexArray(this.edgeHoverVAO);
+        gl.drawArrays(gl.LINES, 0, 2);
+      }
+
       if (g.ringVAO && g.ringCount && !SY.reducedMotion) {
         gl.uniform3f(lp.u.uColor, 1.0, 0.55, 0.22);
         gl.uniform1f(lp.u.uAlpha, 0.5);
@@ -949,7 +1058,7 @@
         const a = posOf.get(e.source), b = posOf.get(e.target);
         if (!a || !b || a.g !== b.g) return; // 跨星云的边不画
         const gid = a.g;
-        (perGroup[gid] = perGroup[gid] || []).push([a.pos, b.pos]);
+        (perGroup[gid] = perGroup[gid] || []).push([a.pos, b.pos, e]);
         adjacency[gid] = adjacency[gid] || {};
         (adjacency[gid][e.source] = adjacency[gid][e.source] || []).push([a.pos, b.pos]);
         (adjacency[gid][e.target] = adjacency[gid][e.target] || []).push([a.pos, b.pos]);
@@ -974,6 +1083,7 @@
         gl.bindVertexArray(null);
         g.edgeVAO = vao;
         g.edgeCount = segs.length;
+        g.edgeSegs = segs.map((s) => ({ a: s[0], b: s[1], edge: s[2] }));
 
         const hvao = gl.createVertexArray();
         const hbuf = gl.createBuffer();
@@ -1086,6 +1196,18 @@
           const dist = Math.hypot(s.pos[0] - this.cam.eye[0], s.pos[1] - this.cam.eye[1], s.pos[2] - this.cam.eye[2]);
           const r = Math.max(6, (Math.max(s.size, dist * pxScale * 1.55) / (dist * this.tanHalf)) * (h / 2));
           s.screen.x = pr.x; s.screen.y = pr.y; s.screen.r = r; s.screen.visible = pr.visible && pr.w > 0;
+        }
+
+        /* 关联边的屏幕投影（供拾取） */
+        this.edgeScreen.length = 0;
+        if (g.edgeSegs) {
+          for (let i = 0; i < g.edgeSegs.length; i++) {
+            const seg = g.edgeSegs[i];
+            const a = M.project(this.viewProj, seg.a, w, h);
+            const b = M.project(this.viewProj, seg.b, w, h);
+            if (!a.visible || !b.visible) continue;
+            this.edgeScreen.push({ ax: a.x, ay: a.y, bx: b.x, by: b.y, index: i });
+          }
         }
       }
     }

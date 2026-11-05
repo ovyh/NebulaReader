@@ -595,3 +595,40 @@ body{ overscroll-behavior:none; }
 .media-meta b{ color:var(--ink-soft); font-weight:400; }
 .media-links{ margin-top:10px; font-size:11px; color:var(--dim-2); line-height:1.9; }
 #media-close{ position:absolute; right:16px; top:16px; }
+/* ---------- 手机端菜单（三条杠） ---------- */
+.menu-btn{ display:none; font-size:16px; letter-spacing:0; padding:0 12px; }
+#menu{ position:fixed; inset:0; z-index:80; display:flex; align-items:flex-end; justify-content:center; }
+#menu.hidden{ display:none; }
+.menu-veil{ position:absolute; inset:0; background:rgba(3,5,12,.6); backdrop-filter:blur(6px); }
+.menu-sheet{
+  position:relative; width:100%; max-width:520px; padding:10px 14px calc(18px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg, rgba(14,20,36,.98), rgba(7,10,20,1));
+  border-top:1px solid var(--line); border-radius:18px 18px 0 0;
+  box-shadow:0 -30px 80px rgba(0,0,0,.6);
+  transform:translateY(8px); animation:menuIn .22s ease both;
+}
+@keyframes menuIn{ from{ transform:translateY(28px); opacity:.4; } to{ transform:none; opacity:1; } }
+.menu-head{ display:flex; align-items:center; justify-content:space-between; padding:4px 6px 10px; }
+.menu-head span{ font-size:11px; letter-spacing:.32em; color:var(--dim-2); }
+.menu-item{
+  display:flex; align-items:center; gap:14px; width:100%; height:52px; padding:0 14px; margin-bottom:6px;
+  background:rgba(255,255,255,.035); border:1px solid var(--line-soft); border-radius:12px;
+  color:var(--ink); font-family:var(--sans); font-size:14px; letter-spacing:.12em; text-align:left;
+}
+.menu-item i{ font-style:normal; width:20px; text-align:center; color:var(--dim); font-size:14px; }
+.menu-item:active{ background:rgba(154,216,255,.12); }
+.pad-btn{
+  width:56px; height:46px; border-radius:10px; border:1px solid var(--line-soft);
+  background:rgba(255,255,255,.03); color:var(--ink-soft); font-size:15px;
+}
+.pad-btn:active{ background:rgba(154,216,255,.15); }
+.pad-ok{ width:84px; }
+.menu-pad{ display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:10px; }
+.pad-row{ display:flex; gap:6px; align-items:center; }
+
+@media (max-width:900px), (pointer:coarse){
+  .menu-btn{ display:inline-flex; }
+  #btn-touch, #btn-atlas, #btn-about, #btn-data, .search-wrap{ display:none !important; }
+  .brand-cn{ font-size:15px; }
+  .tools{ gap:4px; }
+}
