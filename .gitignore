@@ -29,3 +29,10 @@ android/build/
 android/app/build/
 android/local.properties
 
+
+# Ç©ÃûÃÜÔ¿£¨¾ø²»Èë¿â£©
+android/keystore/
+android/keystore.properties
+*.p12
+*.jks
+
