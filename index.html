@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>星云文本阅读</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="css/app.css?v=20261106a">
+</head>
+<body>
+
+<canvas id="space"></canvas>
+<div id="grain"></div>
+<div id="flash"></div>
+<div id="stage"></div>
+
+<header id="topbar">
+  <div class="brand">
+    <span class="brand-cn">星云文本阅读</span>
+    <span class="brand-en">NEBULA TEXT READER</span>
+  </div>
+  <nav class="crumbs">
+    <span class="crumb is-on" id="crumb-root">文本星云</span>
+    <span class="sep">/</span>
+    <span class="crumb" id="crumb-nebula">全部星云</span>
+  </nav>
+  <div class="tools">
+    <div class="search-wrap" id="search-wrap">
+      <input id="search" type="text" placeholder="搜索文本" autocomplete="off" spellcheck="false">
+      <kbd>/</kbd>
+      <div class="search-results" id="search-results"></div>
+    </div>
+    <button class="btn" id="btn-data" type="button">数据</button>
+    <button class="btn" id="btn-atlas" type="button">星图目录</button>
+    <button class="btn" id="btn-about" type="button">关于</button>
+  </div>
+</header>
+
+<div id="intro">
+  <div class="intro-inner">
+    <div class="intro-kicker">NEBULA TEXT READER</div>
+    <h1>星云文本阅读</h1>
+    <div class="intro-rule"></div>
+    <p id="intro-tagline">把你的文本，变成一片可以走进的星云</p>
+  </div>
+</div>
+
+<div id="hint">
+  <span>拖拽旋转</span><i></i><span>滚轮推近</span><i></i><span>点击星云，坠入其中</span>
+</div>
+
+<aside id="atlas" class="hidden">
+  <div class="atlas-head">
+    <div>
+      <div class="atlas-kicker" id="atlas-kicker">STAR ATLAS</div>
+      <h2 id="atlas-title">星图目录</h2>
+    </div>
+    <button class="icon-btn" id="atlas-close" type="button" aria-label="关闭">✕</button>
+  </div>
+  <div class="atlas-body" id="atlas-body"></div>
+</aside>
+
+<div id="reader" class="hidden" role="dialog" aria-modal="true">
+  <div class="reader-veil" id="reader-veil"></div>
+  <div class="reader-shell">
+    <aside class="reader-nav">
+      <div class="rn-group" id="rn-group">卷</div>
+      <ol class="rn-chapters" id="rn-chapters"></ol>
+      <div class="rn-foot"><span id="rn-progress">0 / 0</span><div class="rn-bar"><i id="rn-bar-fill"></i></div></div>
+    </aside>
+    <main class="reader-main" id="reader-main">
+      <div class="reader-top">
+        <div class="rt-left">
+          <div class="rt-kicker" id="rt-kicker">001</div>
+          <h1 id="rt-title">—</h1>
+          <div class="rt-meta" id="rt-meta"></div>
+        </div>
+        <div class="rt-right">
+          <button class="icon-btn" data-font="-1" type="button" title="调小字号">A−</button>
+          <button class="icon-btn" data-font="1" type="button" title="调大字号">A+</button>
+          <button class="icon-btn" id="reader-close" type="button" title="关闭 (Esc)">✕</button>
+        </div>
+      </div>
+      <div class="reader-scroll" id="reader-scroll">
+        <article class="doc-body" id="doc-body"></article>
+        <div class="chapter-nav">
+          <button class="ghost-btn" id="prev-chapter" type="button">← 上一节</button>
+          <span id="chapter-index">1 / 1</span>
+          <button class="ghost-btn" id="next-chapter" type="button">下一节 →</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="about" class="hidden">
+  <div class="about-card">
+    <div class="about-kicker">ABOUT THIS READER</div>
+    <h2>星云文本阅读</h2>
+    <p class="about-lead">一个把纯文本变成可漫游星云的阅读器：入口处悬浮着数片实时体积星云，点进去，每一篇文档都是一颗可以点亮的恒星。</p>
+    <div class="about-grid" id="about-grid"></div>
+    <div class="about-note">
+      <p><b>操作</b>　拖拽旋转 · 滚轮推近 · 点击星云进入 · 悬停恒星看篇名 · 点击阅读 · <kbd>Esc</kbd> 返回 · <kbd>/</kbd> 搜索 · <kbd>Tab</kbd> 星图目录</p>
+      <p><b>数据</b>　本程序不内置任何第三方文本。点击右上角「数据」，可以导入你自己的 .txt 文件夹、JSON 数据包，或填写远程数据地址。</p>
+      <p>星云均为实时体积光渲染（Ray-marched Volumetric Projection），没有任何贴图：每一缕星尘都由 3D 噪声场在显卡上逐帧积分而成。</p>
+      <p class="about-credit">开源可视化程序 · 文本内容由使用者自行提供</p>
+    </div>
+    <button class="solid-btn" id="about-close" type="button">继续漫游</button>
+  </div>
+</div>
+
+<div id="data-panel" class="hidden">
+  <div class="data-card">
+    <div class="about-kicker">DATA SOURCE</div>
+    <h2>数据源</h2>
+    <p class="data-lead">导入你自己的文本，程序本身不携带任何剧情内容。</p>
+    <div class="data-status" id="data-status">当前：示例数据</div>
+    <div class="data-actions">
+      <button class="solid-btn" id="btn-pick-folder" type="button">选择文本文件夹</button>
+      <button class="ghost-btn" id="btn-pick-json" type="button">选择 JSON 数据包</button>
+    </div>
+    <div class="data-remote">
+      <input id="data-url" type="text" placeholder="https://…/data.json（需允许跨域）" spellcheck="false">
+      <button class="ghost-btn" id="btn-load-url" type="button">载入</button>
+    </div>
+    <div class="data-actions">
+      <button class="ghost-btn" id="btn-demo" type="button">恢复示例数据</button>
+      <button class="ghost-btn" id="btn-clear" type="button">清除已导入</button>
+    </div>
+    <div class="data-progress"><i id="data-bar"></i></div>
+    <div class="data-hint" id="data-hint">支持 .txt：子文件夹会成为一个分组（一片大星云）。导入后写入本地 IndexedDB，下次打开自动恢复。</div>
+    <button class="icon-btn" id="data-close" type="button" title="关闭">✕</button>
+  </div>
+</div>
+
+<input type="file" id="pick-folder" webkitdirectory directory multiple accept=".txt,text/plain" class="hidden">
+<input type="file" id="pick-json" accept=".json,application/json" class="hidden">
+
+<div id="loading">
+  <div class="load-inner">
+    <div class="load-brand">星云文本阅读</div>
+    <div class="load-sub">NEBULA TEXT READER</div>
+    <div class="load-bar"><i id="load-bar-fill"></i></div>
+    <div class="load-status" id="load-status">正在点亮星图…</div>
+  </div>
+</div>
+
+<div id="star-ring" class="hidden"></div>
+<div id="tooltip" class="hidden"></div>
+<div id="toast"></div>
+<div id="debug" class="hidden"></div>
+
+<script src="js/config.js?v=20261106a"></script>
+<script src="data/demo.js?v=20261106a"></script>
+<script src="js/importer.js?v=20261106a"></script>
+<script src="data/noise.js?v=20261106a"></script>
+<script src="js/gl.js?v=20261106a"></script>
+<script src="js/shaders.js?v=20261106a"></script>
+<script src="js/scene.js?v=20261106a"></script>
+<script src="js/ui.js?v=20261106a"></script>
+<script src="js/app.js?v=20261106a"></script>
+</body>
+</html>
