@@ -1,8 +1,9 @@
 """生成应用图标：assets/icon.ico + icon.png"""
+import os
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-S = 512
+S = int(os.environ.get("ICON_SIZE", "512"))
 rng = np.random.default_rng(20261105)
 
 def smooth_noise(size, cells, seed):
