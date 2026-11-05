@@ -5,6 +5,7 @@
   'use strict';
   const SY = window.SY;
   const $ = (s) => document.querySelector(s);
+  SY.reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const nextFrame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

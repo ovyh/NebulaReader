@@ -176,6 +176,7 @@
         const list = data.docs.filter((d) => d.g === g.id);
         if (list.length) this.groups[g.id] = this.buildStars(g.id, list);
       });
+      this.buildEdgeGeometry();
     }
 
     buildStars(groupId, docs) {
@@ -222,16 +223,30 @@
           p = [Math.cos(a) * r * 0.92, (rnd() - 0.5) * 1.55 * (1.0 - t * 0.35) + t * 0.28, Math.sin(a) * r];
         }
 
-        const size = 0.042 + 0.085 * Math.sqrt(Math.min(d.w, 120000) / 120000) * (0.7 + rnd() * 0.6);
-        const base = palette[i % palette.length];
-        const mixW = 0.05 + rnd() * 0.16;
-        const col = [
-          base[0] + (1 - base[0]) * mixW,
-          base[1] + (1 - base[1]) * mixW,
-          base[2] + (1 - base[2]) * mixW
-        ];
+        // 节点 → 视觉：半径 / 颜色 / 样式来自 js/rules.js；旧数据回退到字数
+        const radius = Number.isFinite(d.radius) ? d.radius : (4 + Math.min(68, (d.w || 0) / 2000));
+        const preset = (SY.CONFIG.STYLE_PRESETS || {})[d.style] || {};
+        const compact = !!d.compact || !!preset.compact;
+        const sizeScale = compact ? 1 : (preset.sizeScale || 1);
+        const size = (0.020 + (radius - 4) / 68 * 0.115) * sizeScale;
+        const rgb = (d.color && SY.rules) ? SY.rules.hexToRgb(d.color) : palette[i % palette.length];
+        // 图片：主色调参与混色（不贴位图），亮度影响光晕
+        let col = rgb.slice();
+        if (d.accent && d.type === 'image' && SY.rules) {
+          const a = SY.rules.hexToRgb(d.accent);
+          const mix = 0.35;
+          col = [
+            rgb[0] * (1 - mix) + a[0] * mix,
+            rgb[1] * (1 - mix) + a[1] * mix,
+            rgb[2] * (1 - mix) + a[2] * mix
+          ];
+        }
+        const jitter = compact ? 1 : (0.94 + rnd() * 0.12);
         list.push({
-          doc: d, pos: p, size: size, color: col, seed: rnd() * 10,
+          doc: d, pos: p, size: size * jitter, color: col, seed: rnd() * 10,
+          style: d.style || 'redDwarf', compact: compact,
+          glow: preset.glow || 1, ring: !!preset.ring, disk: !!preset.disk,
+          pulse: !!preset.pulse, tail: !!preset.tail,
           screen: { x: 0, y: 0, r: 0, visible: false }
         });
       }
@@ -300,9 +315,74 @@
       gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
       gl.bindVertexArray(null);
 
+      /* 致密星光晕 / 吸积盘环：单独 VAO，避免动到普通恒星的 instanced 批次 */
+      const compactStars = list.filter((s) => s.compact);
+      let glowVAO = null, glowCount = 0;
+      if (compactStars.length) {
+        const gc = new Float32Array(compactStars.length * 4);
+        const gcol = new Float32Array(compactStars.length * 4);
+        compactStars.forEach((s, i) => {
+          gc[i * 4] = s.pos[0]; gc[i * 4 + 1] = s.pos[1]; gc[i * 4 + 2] = s.pos[2];
+          gc[i * 4 + 3] = s.size * (s.glow || 1.6) * 2.4;
+          gcol[i * 4] = s.color[0]; gcol[i * 4 + 1] = s.color[1]; gcol[i * 4 + 2] = s.color[2];
+          gcol[i * 4 + 3] = s.seed;
+        });
+        glowVAO = gl.createVertexArray();
+        gl.bindVertexArray(glowVAO);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
+        gl.enableVertexAttribArray(0);
+        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+        const gcb = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, gcb);
+        gl.bufferData(gl.ARRAY_BUFFER, gc, gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(1);
+        gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribDivisor(1, 1);
+        const gcolB = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, gcolB);
+        gl.bufferData(gl.ARRAY_BUFFER, gcol, gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(2);
+        gl.vertexAttribPointer(2, 4, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribDivisor(2, 1);
+        gl.bindVertexArray(null);
+        glowCount = compactStars.length;
+      }
+
+      /* 黑洞吸积盘：静态圆环线框 */
+      const holes = list.filter((s) => s.disk);
+      let ringVAO = null, ringCount = 0;
+      if (holes.length) {
+        const seg = 48;
+        const arr = new Float32Array(holes.length * seg * 6);
+        let k = 0;
+        holes.forEach((s) => {
+          const R = Math.max(0.05, s.size * 3.2);
+          for (let j = 0; j < seg; j++) {
+            const a0 = (j / seg) * Math.PI * 2;
+            const a1 = ((j + 1) / seg) * Math.PI * 2;
+            const c0 = [Math.cos(a0) * R, Math.sin(a0) * R * 0.32, Math.sin(a0) * R];
+            const c1 = [Math.cos(a1) * R, Math.sin(a1) * R * 0.32, Math.sin(a1) * R];
+            arr[k++] = s.pos[0] + c0[0]; arr[k++] = s.pos[1] + c0[1]; arr[k++] = s.pos[2] + c0[2];
+            arr[k++] = s.pos[0] + c1[0]; arr[k++] = s.pos[1] + c1[1]; arr[k++] = s.pos[2] + c1[2];
+          }
+        });
+        ringVAO = gl.createVertexArray();
+        const rb = gl.createBuffer();
+        gl.bindVertexArray(ringVAO);
+        gl.bindBuffer(gl.ARRAY_BUFFER, rb);
+        gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(0);
+        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+        gl.bindVertexArray(null);
+        ringCount = holes.length * seg;
+      }
+
+      /* 关联边：占位，等 buildEdgeGeometry() 填充 */
       return {
         list, vao, count: n, lineVAO, lineCount: links.length,
-        palette, centerBuf: cb, colorBuf: colB, lineBuf
+        palette, centerBuf: cb, colorBuf: colB, lineBuf,
+        glowVAO, glowCount, ringVAO, ringCount,
+        edgeVAO: null, edgeCount: 0, adjacency: null, highlightBuf: null, highlightVAO: null
       };
     }
 
@@ -778,18 +858,52 @@
       const rt = this.rt;
       const pixelScale = (2 * this.tanHalf) / rt.h;
 
-      /* lines */
+      /* ---- 线框层：星座连线 / 关联边 / 吸积盘 / 悬停高亮 ---- */
+      const lp = this.progLine;
+      gl.useProgram(lp.program);
+      gl.blendFunc(gl.ONE, gl.ONE);
+      gl.uniformMatrix4fv(lp.u.uViewProj, false, this.viewProj);
+
       if (g.lineCount) {
-        const lp = this.progLine;
-        gl.useProgram(lp.program);
-        gl.blendFunc(gl.ONE, gl.ONE);
-        gl.uniformMatrix4fv(lp.u.uViewProj, false, this.viewProj);
         gl.uniform3f(lp.u.uColor, 0.32, 0.52, 0.95);
         gl.uniform1f(lp.u.uAlpha, 0.09);
         gl.bindVertexArray(g.lineVAO);
         gl.drawArrays(gl.LINES, 0, g.lineCount * 2);
       }
 
+      if (g.edgeVAO && g.edgeCount) {
+        gl.uniform3f(lp.u.uColor, 0.45, 0.78, 1.0);
+        gl.uniform1f(lp.u.uAlpha, 0.18);
+        gl.bindVertexArray(g.edgeVAO);
+        gl.drawArrays(gl.LINES, 0, g.edgeCount * 2);
+      }
+
+      if (g.ringVAO && g.ringCount && !SY.reducedMotion) {
+        gl.uniform3f(lp.u.uColor, 1.0, 0.55, 0.22);
+        gl.uniform1f(lp.u.uAlpha, 0.5);
+        gl.bindVertexArray(g.ringVAO);
+        gl.drawArrays(gl.LINES, 0, g.ringCount * 2);
+      }
+
+      /* 悬停恒星：高亮它的所有关联边 */
+      if (this.hoverStar && g.adjacency && g.highlightBuf) {
+        const segs = g.adjacency[this.hoverStar.doc.id] || [];
+        if (segs.length) {
+          const arr = new Float32Array(segs.length * 6);
+          segs.forEach((s, i) => {
+            arr[i * 6] = s[0][0]; arr[i * 6 + 1] = s[0][1]; arr[i * 6 + 2] = s[0][2];
+            arr[i * 6 + 3] = s[1][0]; arr[i * 6 + 4] = s[1][1]; arr[i * 6 + 5] = s[1][2];
+          });
+          gl.bindBuffer(gl.ARRAY_BUFFER, g.highlightBuf);
+          gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW);
+          gl.uniform3f(lp.u.uColor, 0.75, 0.95, 1.0);
+          gl.uniform1f(lp.u.uAlpha, 0.55);
+          gl.bindVertexArray(g.highlightVAO);
+          gl.drawArrays(gl.LINES, 0, segs.length * 2);
+        }
+      }
+
+      /* ---- 恒星 billboard ---- */
       const sp = this.progStar;
       gl.useProgram(sp.program);
       gl.blendFunc(gl.ONE, gl.ONE);
@@ -807,7 +921,72 @@
       gl.uniform1f(sp.u.uSelection, 0);
       gl.bindVertexArray(g.vao);
       gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, g.count);
+
+      /* 致密星光晕（同程序，放大 + 低亮度） */
+      if (g.glowVAO && g.glowCount) {
+        const pulse = SY.reducedMotion ? 1 : (1 + Math.sin(this.time * 2.2) * 0.07);
+        gl.uniform1f(sp.u.uBright, 0.26);
+        gl.uniform1f(sp.u.uSizeScale, pulse);
+        gl.bindVertexArray(g.glowVAO);
+        gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, g.glowCount);
+      }
+
       gl.bindVertexArray(null);
+    }
+
+    /** 依据 data.edges 生成每个星云的关联边几何与邻接表 */
+    buildEdgeGeometry() {
+      const gl = this.gl;
+      const edges = (this.index && this.index.edges) || [];
+      const posOf = new Map();
+      Object.keys(this.groups).forEach((gid) => {
+        this.groups[gid].list.forEach((s) => posOf.set(s.doc.id, { pos: s.pos, g: gid }));
+      });
+
+      const perGroup = {};
+      const adjacency = {};
+      edges.forEach((e) => {
+        const a = posOf.get(e.source), b = posOf.get(e.target);
+        if (!a || !b || a.g !== b.g) return; // 跨星云的边不画
+        const gid = a.g;
+        (perGroup[gid] = perGroup[gid] || []).push([a.pos, b.pos]);
+        adjacency[gid] = adjacency[gid] || {};
+        (adjacency[gid][e.source] = adjacency[gid][e.source] || []).push([a.pos, b.pos]);
+        (adjacency[gid][e.target] = adjacency[gid][e.target] || []).push([a.pos, b.pos]);
+      });
+
+      Object.keys(perGroup).forEach((gid) => {
+        const g = this.groups[gid];
+        if (!g) return;
+        const segs = perGroup[gid];
+        const arr = new Float32Array(segs.length * 6);
+        segs.forEach((s, i) => {
+          arr[i * 6] = s[0][0]; arr[i * 6 + 1] = s[0][1]; arr[i * 6 + 2] = s[0][2];
+          arr[i * 6 + 3] = s[1][0]; arr[i * 6 + 4] = s[1][1]; arr[i * 6 + 5] = s[1][2];
+        });
+        const vao = gl.createVertexArray();
+        const buf = gl.createBuffer();
+        gl.bindVertexArray(vao);
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(0);
+        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+        gl.bindVertexArray(null);
+        g.edgeVAO = vao;
+        g.edgeCount = segs.length;
+
+        const hvao = gl.createVertexArray();
+        const hbuf = gl.createBuffer();
+        gl.bindVertexArray(hvao);
+        gl.bindBuffer(gl.ARRAY_BUFFER, hbuf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(6), gl.DYNAMIC_DRAW);
+        gl.enableVertexAttribArray(0);
+        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+        gl.bindVertexArray(null);
+        g.highlightVAO = hvao;
+        g.highlightBuf = hbuf;
+        g.adjacency = adjacency[gid] || {};
+      });
     }
 
     drawEmbedded() {

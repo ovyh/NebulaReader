@@ -303,6 +303,10 @@
 
     async openDoc(doc) {
       this.closeAtlas();
+      if (doc.type === 'image' || doc.type === 'audio') {
+        this.openMedia(doc);
+        return;
+      }
       const g = this.groupOf(doc.g);
       const reader = $('#reader');
       this.reader.doc = doc;
@@ -315,7 +319,13 @@
       $('#rn-group').textContent = g.cn + ' · ' + g.en;
       $('#rt-kicker').textContent = g.en + ' · ' + String(doc.no).padStart(3, '0');
       $('#rt-title').textContent = doc.t;
-      $('#rt-meta').textContent = doc.c + ' 节 · ' + doc.w.toLocaleString('zh-CN') + ' 字 · ' + g.tag;
+      const metaBits = [];
+      metaBits.push(doc.c + ' 节');
+      metaBits.push(doc.w.toLocaleString('zh-CN') + ' 字');
+      if (Number.isFinite(doc.units)) metaBits.push('U ' + doc.units.toLocaleString('zh-CN'));
+      if (doc.style) metaBits.push(doc.style);
+      metaBits.push(g.tag);
+      $('#rt-meta').textContent = metaBits.join(' · ');
       $('#doc-body').innerHTML = '<p class="narr" style="opacity:.6">正在展开星图…</p>';
       $('#rn-chapters').innerHTML = '';
 
@@ -488,11 +498,75 @@
         document.body.classList.add('atlas-open');
       });
       $('#about-close').addEventListener('click', () => this.closeAbout());
+      $('#media-close').addEventListener('click', () => this.closeMedia());
+      $('#media-veil').addEventListener('click', () => this.closeMedia());
     },
 
     closeAbout() {
       $('#about').classList.add('hidden');
       document.body.classList.remove('atlas-open');
+    },
+
+    /* ---------------- 图片 / 音频预览 ---------------- */
+    openMedia(doc) {
+      const modal = $('#media');
+      this.mediaDoc = doc;
+      const g = this.groupOf(doc.g);
+      const isImage = doc.type === 'image';
+      $('#media-kicker').textContent = (doc.format || '?') + ' · ' + (isImage ? 'IMAGE' : 'AUDIO');
+      $('#media-title').textContent = doc.t;
+      $('#media-body').innerHTML = '';
+      $('#media-links').textContent = '';
+
+      if (isImage) {
+        if (doc.thumb) {
+          const img = document.createElement('img');
+          img.src = doc.thumb;
+          img.alt = doc.t;
+          $('#media-body').appendChild(img);
+        } else {
+          $('#media-body').innerHTML = '<div class="media-note">没有可用预览（图片超过缩略图上限，或重新导入后可恢复）。</div>';
+        }
+      } else {
+        if (doc.mediaUrl) {
+          const audio = document.createElement('audio');
+          audio.controls = true;
+          audio.src = doc.mediaUrl;
+          $('#media-body').appendChild(audio);
+          audio.play().catch(() => {});
+        } else {
+          $('#media-body').innerHTML = '<div class="media-note">音频数据未保留到本地缓存，重新导入该文件即可播放。</div>';
+        }
+      }
+
+      const bits = [];
+      bits.push('<b>格式</b> ' + (doc.format || '?'));
+      bits.push('<b>信息量</b> ' + (Number.isFinite(doc.units) ? doc.units.toLocaleString('zh-CN') : '0') + ' U');
+      bits.push('<b>质量</b> ' + (Number.isFinite(doc.mass) ? doc.mass.toFixed(1) : '—'));
+      bits.push('<b>温度</b> ' + (Number.isFinite(doc.temperature) ? Math.round(doc.temperature).toLocaleString('zh-CN') : '—') + ' K');
+      bits.push('<b>天体</b> ' + (doc.style || '—'));
+      if (doc.meta && doc.meta.width) bits.push('<b>尺寸</b> ' + doc.meta.width + '×' + doc.meta.height);
+      if (doc.meta && doc.meta.durationSec) bits.push('<b>时长</b> ' + doc.meta.durationSec.toFixed(1) + 's');
+      if (doc.meta && doc.meta.fileSize) bits.push('<b>文件</b> ' + (doc.meta.fileSize / 1024).toFixed(0) + ' KB');
+      bits.push('<b>分组</b> ' + g.cn);
+      $('#media-meta').innerHTML = bits.join('　·　');
+
+      const links = (doc.links || []).map((id) => this.docsById.get(id)).filter(Boolean);
+      if (links.length) {
+        $('#media-links').textContent = '关联：' + links.slice(0, 8).map((d) => d.t).join('、') + (links.length > 8 ? ' …' : '');
+      }
+
+      modal.classList.remove('hidden');
+      document.body.classList.add('atlas-open');
+    },
+
+    closeMedia() {
+      const modal = $('#media');
+      modal.classList.add('hidden');
+      document.body.classList.remove('atlas-open');
+      const audio = modal.querySelector('audio');
+      if (audio) { try { audio.pause(); } catch (e) {} }
+      this.mediaDoc = null;
     },
 
     /* ---------------- data source ---------------- */
@@ -630,6 +704,7 @@
     /* ---------------- global keys ---------------- */
     /* 统一的返回逻辑：先关浮层，再退出星云，最后才是退出应用 */
     goBack() {
+      if (!$('#media').classList.contains('hidden')) { this.closeMedia(); return true; }
       if (this.reader.open) { this.closeReader(); return true; }
       if (!$('#data-panel').classList.contains('hidden')) { this.closeData(); return true; }
       if (!$('#about').classList.contains('hidden')) { this.closeAbout(); return true; }

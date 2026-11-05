@@ -102,6 +102,17 @@
   </div>
 </div>
 
+<div id="media" class="hidden" role="dialog" aria-modal="true">
+  <div class="media-veil" id="media-veil"></div>
+  <div class="media-card">
+    <button class="icon-btn" id="media-close" type="button" title="关闭 (Esc)">✕</button>
+    <div class="media-kicker" id="media-kicker">MEDIA</div>
+    <h2 id="media-title">—</h2>
+    <div class="media-body" id="media-body"></div>
+    <div class="media-meta" id="media-meta"></div>
+    <div class="media-links" id="media-links"></div>
+  </div>
+</div>
 <div id="about" class="hidden">
   <div class="about-card">
     <div class="about-kicker">ABOUT THIS READER</div>
@@ -140,14 +151,14 @@
       <button class="ghost-btn" id="btn-clear" type="button">清除已导入</button>
     </div>
     <div class="data-progress"><i id="data-bar"></i></div>
-    <div class="data-hint" id="data-hint">支持 .txt：子文件夹会成为一个分组（一片大星云）。导入后写入本地 IndexedDB，下次打开自动恢复。</div>
+    <div class="data-hint" id="data-hint">支持文本 / 音频 / 图片：子文件夹会成为一个分组（一片大星云），每个文件按格式变成对应天体。导入后写入本地 IndexedDB，下次打开自动恢复。</div>
     <button class="icon-btn" id="data-close" type="button" title="关闭">✕</button>
   </div>
 </div>
 
-<input type="file" id="pick-folder" webkitdirectory directory multiple accept=".txt,text/plain" class="hidden">
+<input type="file" id="pick-folder" webkitdirectory directory multiple class="hidden">
 <input type="file" id="pick-json" accept=".json,application/json" class="hidden">
-<input type="file" id="pick-files" accept=".txt,text/plain" multiple class="hidden">
+<input type="file" id="pick-files" multiple class="hidden">
 
 <div id="loading">
   <div class="load-inner">
@@ -164,6 +175,7 @@
 <div id="debug" class="hidden"></div>
 
 <script src="js/config.js?v=20261106a"></script>
+<script src="js/rules.js?v=20261106a"></script>
 <script src="data/demo.js?v=20261106a"></script>
 <script src="js/importer.js?v=20261106a"></script>
 <script src="data/noise.js?v=20261106a"></script>
