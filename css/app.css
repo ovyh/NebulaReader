@@ -632,3 +632,10 @@ body{ overscroll-behavior:none; }
   .brand-cn{ font-size:15px; }
   .tools{ gap:4px; }
 }
+/* ---------- 多星云：名签紧凑 ---------- */
+body.many-nebulae .nebula-card{ width:132px; margin-left:-66px; }
+body.many-nebulae .nc-cn{ font-size:15px; letter-spacing:.14em; }
+body.many-nebulae .nc-en{ font-size:6.5px; letter-spacing:.18em; }
+body.many-nebulae .nc-meta{ display:none; }
+body.many-nebulae .nc-idx{ font-size:7.5px; letter-spacing:.18em; }
+body.many-nebulae .nc-rule{ height:10px; }

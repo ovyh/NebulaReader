@@ -116,6 +116,7 @@
       this.docsById = new Map(index.docs.map((d) => [d.id, d]));
       this.cards = [];
       this.reader = { doc: null, parsed: null, idx: 0, fontSize: 18.5, open: false };
+      document.body.classList.toggle('many-nebulae', SY.NEBULAE.length > 6);
       this.buildCards();
       this.buildSearch();
       this.buildAtlas();
@@ -177,7 +178,10 @@
         const chrome = Math.max(0, outerH - (window.innerHeight || 0));
         const off = chrome > 20 && syPos + outerH > scrH + 8;
         const vh = off ? Math.max(320, scrH - Math.max(syPos, 0)) : (window.innerHeight || 800);
-        const top = Math.min(Math.max(s.y + s.r * 0.92, 96), vh - 104);
+        // 星云多时隔一个放到上方，减少名签互相压
+        const above = (i % 2 === 1);
+        const rawTop = above ? (s.y - s.r * 0.92 - 62) : (s.y + s.r * 0.92);
+        const top = Math.min(Math.max(rawTop, 92), vh - 104);
         el.style.top = top + 'px';
         el.classList.toggle('is-on', !!window.SY.readyForLabels && (!this.r.trans || this.r.trans.dir === 'out'));
         el.classList.toggle('is-dim', this.r.hoverNebula >= 0 && this.r.hoverNebula !== i);

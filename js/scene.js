@@ -227,11 +227,76 @@
           const a = t * Math.PI * 2 + (rnd() - 0.5) * 0.24;
           const r = 2.55 + rnd() * 0.72;
           p = [Math.cos(a) * r, (rnd() - 0.5) * 1.0, Math.sin(a) * r];
-        } else {
+        } else if (type === 3) {
           // 暗尘柱状：彗尾
           const r = 0.55 + t * 3.95;
           const a = -0.85 + t * 2.1 + (rnd() - 0.5) * 0.42;
           p = [Math.cos(a) * r * 0.92, (rnd() - 0.5) * 1.55 * (1.0 - t * 0.35) + t * 0.28, Math.sin(a) * r];
+        } else if (type === 4) {
+          // 双极喷流：两束锥形喷流
+          const side = i % 2 ? 1 : -1;
+          const tt = Math.pow(rnd(), 0.55);
+          const y = side * (0.25 + tt * 3.4);
+          const spread = 0.12 + tt * 0.85;
+          const a = rnd() * Math.PI * 2;
+          p = [Math.cos(a) * spread * rnd(), y, Math.sin(a) * spread * rnd()];
+        } else if (type === 5) {
+          // 猫眼：环 + 两臂
+          if (i % 3 === 0) {
+            const a = rnd() * Math.PI * 2;
+            const r = 2.35 + rnd() * 0.55;
+            p = [Math.cos(a) * r, (rnd() - 0.5) * 0.7, Math.sin(a) * r];
+          } else {
+            const tt = Math.pow(rnd(), 0.6);
+            const r = 0.55 + tt * 2.6;
+            const arm = i % 2;
+            const a = arm * Math.PI + Math.log(r + 0.2) * 2.2 + (rnd() - 0.5) * 0.4;
+            p = [Math.cos(a) * r, gauss(rnd) * 0.28, Math.sin(a) * r];
+          }
+        } else if (type === 6) {
+          // 蟹状细丝：球壳内的团块
+          const r = Math.pow(rnd(), 0.45) * 3.2;
+          const th = rnd() * Math.PI * 2;
+          const ph = Math.acos(2 * rnd() - 1);
+          p = [Math.sin(ph) * Math.cos(th) * r, Math.cos(ph) * r * 0.75, Math.sin(ph) * Math.sin(th) * r];
+        } else if (type === 7) {
+          // 六瓣玫瑰
+          const petal = i % 6;
+          const a = petal * (Math.PI / 3) + (rnd() - 0.5) * 0.5;
+          const r = 0.9 + Math.pow(rnd(), 0.7) * 2.6;
+          const lift = Math.sin(r / 3.2 * Math.PI) * 0.9;
+          p = [Math.cos(a) * r, lift * (rnd() - 0.35), Math.sin(a) * r];
+        } else if (type === 8) {
+          // 茧：沿 z 拉长
+          const tt = Math.pow(rnd(), 0.6);
+          const z = (rnd() * 2 - 1) * 3.4;
+          const rad = (1.0 - Math.abs(z) / 3.8) * 1.9 * tt;
+          const a = rnd() * Math.PI * 2;
+          p = [Math.cos(a) * rad, Math.sin(a) * rad * 0.8, z];
+        } else if (type === 9) {
+          // 蝴蝶：两瓣
+          const side = i % 2 ? 1 : -1;
+          const tt = Math.pow(rnd(), 0.6);
+          const x = side * (0.35 + tt * 2.9);
+          const spread = 0.35 + tt * 2.0;
+          p = [x, (rnd() - 0.5) * spread, (rnd() - 0.5) * spread * 0.9];
+        } else if (type === 10) {
+          // 水母：伞盖 + 触须
+          if (i % 4 === 0) {
+            const a = rnd() * Math.PI * 2;
+            const r = Math.pow(rnd(), 0.6) * 2.1;
+            p = [Math.cos(a) * r, 1.4 + (rnd() - 0.5) * 0.5, Math.sin(a) * r];
+          } else {
+            const a = rnd() * Math.PI * 2;
+            const r = 0.4 + rnd() * 1.5;
+            p = [Math.cos(a) * r, -0.4 - rnd() * 2.6, Math.sin(a) * r];
+          }
+        } else {
+          // 同心环
+          const ringIdx = i % 3;
+          const rr = 1.2 + ringIdx * 1.15;
+          const a = rnd() * Math.PI * 2;
+          p = [Math.cos(a) * rr, (rnd() - 0.5) * 0.45, Math.sin(a) * rr];
         }
 
         // 节点 → 视觉：半径 / 颜色 / 样式来自 js/rules.js；旧数据回退到字数
@@ -438,14 +503,13 @@
         const fitH = M.clamp(vh / 980, 0.60, 1.10);
         const fitW = M.clamp(vw / 1500, 0.72, 1.15);
         let fit = Math.min(fitH, fitW);
-        // 竖屏 / 窄屏：按纵横比把四片星云整体收进画面
+        // 按实际星云包围盒取景：数量越多自动拉远，竖屏也适用
         const aspect = vw / Math.max(1, vh);
-        if (aspect < 1) {
-          const tanV = Math.tan(0.5 * 43 * Math.PI / 180);
-          const tanH = tanV * aspect;
-          const need = Math.max(6.2 / Math.max(0.08, tanH), 2.9 / tanV);
-          fit = Math.min(fit, 12.4 / (need * 1.05));
-        }
+        const tanV = Math.tan(0.5 * 43 * Math.PI / 180);
+        const tanH = tanV * aspect;
+        const bounds = SY.sceneBounds || { rx: 6.2, ry: 2.9 };
+        const need = Math.max((bounds.rx + 0.9) / Math.max(0.08, tanH), (bounds.ry + 0.9) / tanV);
+        fit = Math.min(fit, 12.4 / (need * 1.06));
         this.fit = fit;
         const d = this.orbit.dist / fit;
         const az = this.orbit.az + Math.sin(this.time * 0.11) * 0.028;

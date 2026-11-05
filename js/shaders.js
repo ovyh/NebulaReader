@@ -148,19 +148,19 @@ float capsule(vec3 p, vec3 a, vec3 b, float r) {
 }
 
 /* ========== 0 · 螺旋星系 ========== */
-vec4 medSpiral(vec3 p) {
+vec4 medSpiral(vec3 p, float arms, float twist, float thickScale) {
   float r = length(p.xz);
   float th = atan(p.z + 1e-5, p.x + 1e-5);
   float warp = fbm(p * 1.10 + vec3(0.0, uTime * 0.006, 0.0));
-  float spin = th + 2.45 * log(r + 0.085) + (warp - 0.5) * 2.0;
-  float arms = pow(0.5 + 0.5 * cos(2.0 * spin), 2.2);
-  float thin = 0.042 + 0.070 * r;
+  float spin = th + twist * log(r + 0.085) + (warp - 0.5) * 2.0;
+  float armMask = pow(0.5 + 0.5 * cos(arms * spin), 2.2);
+  float thin = (0.042 + 0.070 * r) * thickScale;
   float disc = exp(-pow(r / 0.95, 3.2)) * exp(-pow(abs(p.y) / thin, 1.9));
   float n = fbm(vec3(p.x, p.y * 1.9, p.z) * 2.70 + 4.0);
   float det = texture(uNoise, vec3(p.x, p.y * 2.2, p.z) * 3.2 + 17.0).b;
   float dust = smoothstep(0.52, 0.80, det);
   float bulge = exp(-(r * r * 22.0 + p.y * p.y * 200.0));
-  float gas = disc * (0.05 + 1.45 * arms) * (0.20 + 1.35 * n);
+  float gas = disc * (0.05 + 1.45 * armMask) * (0.20 + 1.35 * n);
   gas *= 1.0 - 0.55 * dust * (1.0 - smoothstep(0.05, 0.60, r));
   gas += bulge * 3.0;
   float ext = gas * 0.12 + dust * disc * 0.85 + bulge * 0.12;
@@ -175,7 +175,7 @@ vec4 medSpiral(vec3 p) {
 }
 
 /* ========== 1 · 发射星云（花环状） ========== */
-vec4 medRose(vec3 p) {
+vec4 medRose(vec3 p, float petals, float ringScale) {
   float rho = length(p.xz);
   float th = atan(p.z + 1e-4, p.x + 1e-4);
   float n1 = fbm(p * 1.10 + 3.0);
@@ -183,10 +183,10 @@ vec4 medRose(vec3 p) {
   float det = texture(uNoise, p * 1.50 + 2.0).b;
   float fine = texture(uNoise, p * 2.40 + 7.0).a;
 
-  float ringR = 0.50 + 0.055 * sin(th * 5.0 + n1 * 6.0) + 0.04 * (n1 - 0.5);
+  float ringR = 0.50 * ringScale + 0.055 * sin(th * 5.0 + n1 * 6.0) + 0.04 * (n1 - 0.5);
   float ring = exp(-pow((rho - ringR) / (0.13 + 0.05 * n2), 2.0));
   float thick = exp(-pow(p.y / (0.15 + 0.07 * n2), 2.0));
-  float petal = 0.30 + 0.85 * pow(0.5 + 0.5 * cos(th * 7.0 + n2 * 6.3), 3.0);
+  float petal = 0.30 + 0.85 * pow(0.5 + 0.5 * cos(th * petals + n2 * 6.3), 3.0);
   float fil = pow(clamp((det - 0.32) * 2.0, 0.0, 1.0), 1.8);
 
   float gas = ring * thick * petal * (0.35 + 1.9 * fil + 0.5 * n2);
@@ -205,19 +205,19 @@ vec4 medRose(vec3 p) {
 }
 
 /* ========== 2 · 环状星云 ========== */
-vec4 medRing(vec3 p) {
+vec4 medRing(vec3 p, float ringRadius, float bandW, float jetAmt) {
   float rho = length(p.xz);
   float r = length(p);
   float th = atan(p.z + 1e-5, p.x + 1e-5);
   float n1 = fbm(p * 2.35 + 4.0);
   float n2 = texture(uNoise, p * 3.4 + 8.0).b;
   float wob = 0.030 * sin(th * 3.0 + uTime * 0.05);
-  float torus = length(vec2(rho - 0.60 + wob, p.y * 1.30));
-  float band = exp(-pow(torus / 0.065, 2.0));
+  float torus = length(vec2(rho - ringRadius + wob, p.y * 1.30));
+  float band = exp(-pow(torus / bandW, 2.0));
   float shell = exp(-pow((r - 0.52) / 0.22, 2.0)) * (0.05 + 0.85 * n1);
   float core = exp(-(rho * rho * 90.0 + p.y * p.y * 70.0));
   float jet = exp(-pow(rho / 0.075, 2.0)) * exp(-pow(abs(p.y) / 0.46, 2.0)) * (0.18 + 0.7 * n2);
-  float gas = band * 1.45 + shell * 0.30 + core * 2.8 + jet * 0.55;
+  float gas = band * 1.45 + shell * 0.30 + core * 2.8 + jet * 0.55 * jetAmt;
   gas *= 0.45 + 1.0 * n1;
   float ext = gas * 0.20 + shell * 0.30 + smoothstep(0.62, 0.92, n2) * 0.18;
 
@@ -229,7 +229,10 @@ vec4 medRing(vec3 p) {
 }
 
 /* ========== 3 · 暗尘造星云（柱状） ========== */
-vec4 medPillar(vec3 p) {
+vec4 medPillar(vec3 p, float rotY, float spread) {
+  vec3 pr = vec3(cos(rotY) * p.x - sin(rotY) * p.z, p.y, sin(rotY) * p.x + cos(rotY) * p.z);
+  pr.x *= spread; pr.z *= spread;
+  p = pr;
   float warp = fbm(p * 1.25 + 5.0);
   vec3 q = p + (warp - 0.5) * vec3(0.30, 0.14, -0.24);
   float n1 = fbm(q * 1.15 + 2.0);
@@ -261,10 +264,18 @@ vec4 medPillar(vec3 p) {
 }
 
 vec4 medium(vec3 p) {
-  if (uType < 0.5) return medSpiral(p);
-  if (uType < 1.5) return medRose(p);
-  if (uType < 2.5) return medRing(p);
-  return medPillar(p);
+  if (uType < 0.5)       return medSpiral(p, 2.0, 2.45, 1.00);   // 0 双臂螺旋
+  if (uType < 1.5)       return medRose(p, 7.0, 1.00);           // 1 七瓣花环
+  if (uType < 2.5)       return medRing(p, 0.60, 0.065, 1.0);    // 2 环状星云
+  if (uType < 3.5)       return medPillar(p, 0.0, 1.00);         // 3 竖柱
+  if (uType < 4.5)       return medSpiral(p, 3.0, 3.40, 0.60);   // 4 三臂紧旋
+  if (uType < 5.5)       return medSpiral(p, 2.0, 1.35, 1.90);   // 5 双臂松散
+  if (uType < 6.5)       return medRose(p, 4.0, 1.25);           // 6 四瓣
+  if (uType < 7.5)       return medRose(p, 12.0, 0.80);          // 7 十二瓣
+  if (uType < 8.5)       return medRing(p, 0.42, 0.045, 1.6);    // 8 小环强喷流
+  if (uType < 9.5)       return medRing(p, 0.80, 0.100, 0.15);   // 9 大环弱喷流
+  if (uType < 10.5)      return medPillar(p, 1.5708, 1.15);      // 10 横柱
+  return medPillar(p, 0.80, 1.45);                               // 11 斜柱
 }
 
 float hashE(float n) { return fract(sin(n) * 43758.5453); }
