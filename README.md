@@ -50,7 +50,7 @@ JSON 数据包，或填写自己的远程数据地址。
 仓库里带了一个极简 WebView 外壳（`android/`）和对应的 CI 工作流：
 
 - 从 Releases 下载 `NebulaTextReader-v1.0.0.apk`，安装后打开即可；
-- debug 签名，安装时需要允许「安装未知应用」；
+- 正式签名（v1 + v2，独立密钥库），安装时需要允许「安装未知应用」；
 - 手机上没有「选择文件夹」，用「数据」→「选择 txt 文件（手机）」多选导入；
 - 自己构建：`cd android && gradle assembleDebug`（需要 JDK 17 + Android SDK 34）；
 - 每次推送 `v*` 标签或手动触发 `android-apk` 工作流都会重新产出 APK。
