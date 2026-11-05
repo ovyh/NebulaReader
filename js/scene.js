@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    星云文本阅读 · Renderer
    - 四片体积星云（实时 raymarch，无贴图）
    - 星云内部：每篇文档 = 一颗恒星
@@ -52,6 +52,8 @@
       this.hoverStar = null;
       this.trans = null;
       this.pointer = { x: 0, y: 0, down: false, drag: false, lx: 0, ly: 0, moved: 0 };
+      this.pointers = new Map();
+      this.pinch = null;
       this.orbit = { az: 0.0, el: 0.055, dist: 12.4 };
       this.orbitIn = { az: 0.62, el: 0.52, dist: 7.4 };
       this.cam = { eye: [0, 0.4, 12.4], target: [0, 0, 0.4], fov: 43 * Math.PI / 180 };
@@ -116,9 +118,10 @@
       this.resize(true);
       this.buildAllStars();
 
-      this.canvas.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+      window.addEventListener('pointerdown', (e) => this.onPointerDown(e));
       window.addEventListener('pointermove', (e) => this.onPointerMove(e));
       window.addEventListener('pointerup', (e) => this.onPointerUp(e));
+      window.addEventListener('pointercancel', (e) => this.onPointerUp(e));
       this.canvas.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
       this.canvas.addEventListener('pointerleave', () => {
         if (this.hoverStar) {
@@ -343,7 +346,15 @@
         const vw = this.canvas.clientWidth || 1400;
         const fitH = M.clamp(vh / 980, 0.60, 1.10);
         const fitW = M.clamp(vw / 1500, 0.72, 1.15);
-        const fit = Math.min(fitH, fitW);
+        let fit = Math.min(fitH, fitW);
+        // 竖屏 / 窄屏：按纵横比把四片星云整体收进画面
+        const aspect = vw / Math.max(1, vh);
+        if (aspect < 1) {
+          const tanV = Math.tan(0.5 * 43 * Math.PI / 180);
+          const tanH = tanV * aspect;
+          const need = Math.max(6.2 / Math.max(0.08, tanH), 2.9 / tanV);
+          fit = Math.min(fit, 12.4 / (need * 1.05));
+        }
         this.fit = fit;
         const d = this.orbit.dist / fit;
         const az = this.orbit.az + Math.sin(this.time * 0.11) * 0.028;
@@ -460,17 +471,58 @@
     /* ---------------- pointers ---------------- */
     onPointerDown(e) {
       if (this.trans) return;
+      // UI 元素上的按下不算拖拽；但双指捏合无论落在哪里都要生效
+      const t = e.target;
+      const isUI = !!(t && t.closest && t.closest('button, input, a, .nebula-card, #atlas, #reader, #about, #data-panel, .search-wrap'));
+      this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      this.pinchJustUsed = false;
+
+      // 双指：捏合缩放
+      if (this.pointers.size >= 2) {
+        const pts = Array.from(this.pointers.values());
+        const a = pts[0], b = pts[1];
+        this.pinch = {
+          dist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)),
+          zoom: this.mode === 'galaxy' ? this.orbit.dist : this.orbitIn.dist
+        };
+        this.pointer.down = false;
+        this.pointer.drag = false;
+        return;
+      }
+
+      if (isUI) { this.pointer.down = false; return; }
+
       this.pointer.down = true;
       this.pointer.drag = false;
       this.pointer.moved = 0;
       this.pointer.lx = e.clientX;
       this.pointer.ly = e.clientY;
-      this.canvas.setPointerCapture && this.canvas.setPointerCapture(e.pointerId);
+      try { this.canvas.setPointerCapture && this.canvas.setPointerCapture(e.pointerId); } catch (err) {}
     }
 
     onPointerMove(e) {
       this.pointer.x = e.clientX;
       this.pointer.y = e.clientY;
+
+      if (this.pointers.has(e.pointerId)) {
+        this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      }
+
+      // 捏合缩放（双指）
+      if (this.pointers.size >= 2 && this.pinch) {
+        const pts = Array.from(this.pointers.values());
+        const a = pts[0], b = pts[1];
+        const d = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
+        const ratio = this.pinch.dist / d;
+        if (this.mode === 'galaxy') {
+          this.orbit.dist = M.clamp(this.pinch.zoom * ratio, 7.2, 15.0);
+        } else {
+          this.orbitIn.dist = M.clamp(this.pinch.zoom * ratio, 2.6, 15.0);
+        }
+        this.pinchJustUsed = true;
+        return;
+      }
+
       const p = this.pointer;
       if (p.down && !this.trans) {
         const dx = e.clientX - p.lx;
@@ -478,14 +530,16 @@
         p.moved += Math.abs(dx) + Math.abs(dy);
         p.lx = e.clientX;
         p.ly = e.clientY;
-        if (p.moved > 6) p.drag = true;
+        // 触摸屏手感更钝，灵敏度提高
+        const k = (e.pointerType === 'touch' || e.pointerType === 'pen') ? 2.2 : 1;
+        if (p.moved > 4) p.drag = true;
         if (p.drag) {
           if (this.mode === 'galaxy') {
-            this.orbit.az -= dx * 0.0035;
-            this.orbit.el = M.clamp(this.orbit.el + dy * 0.0028, -0.55, 0.55);
+            this.orbit.az -= dx * 0.0035 * k;
+            this.orbit.el = M.clamp(this.orbit.el + dy * 0.0028 * k, -0.55, 0.55);
           } else {
-            this.orbitIn.az -= dx * 0.0042;
-            this.orbitIn.el = M.clamp(this.orbitIn.el + dy * 0.0034, -1.25, 1.25);
+            this.orbitIn.az -= dx * 0.0042 * k;
+            this.orbitIn.el = M.clamp(this.orbitIn.el + dy * 0.0034 * k, -1.25, 1.25);
           }
         }
       }
@@ -494,9 +548,12 @@
     }
 
     onPointerUp(e) {
+      this.pointers.delete(e.pointerId);
+      if (this.pointers.size < 2) this.pinch = null;
       const p = this.pointer;
       const wasDown = p.down;
       p.down = false;
+      if (this.pinchJustUsed) { this.pinchJustUsed = false; return; }
       if (!wasDown || this.trans) return;
       if (p.moved > 8) return;
       if (this.mode === 'galaxy') {

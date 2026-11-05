@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    星云文本阅读 · NEBULA TEXT READER  —  visual system
    ============================================================ */
 
@@ -513,3 +513,50 @@ body.reading #hint, body.atlas-open #hint{ opacity:0; transform:translate(-50%,1
 .data-progress i{ display:block; height:100%; width:0; background:linear-gradient(90deg,#7fc4ff,#d9ecff); box-shadow:0 0 12px rgba(154,216,255,.8); transition:width .35s ease; }
 .data-hint{ font-size:11px; line-height:1.9; color:var(--dim-2); letter-spacing:.03em; }
 #data-close{ position:absolute; right:16px; top:16px; }
+/* ---------- 触摸与手机布局 ---------- */
+#space{ touch-action:none; }
+body{ overscroll-behavior:none; }
+.btn-touch{ display:none; }
+
+@media (max-width:900px), (pointer:coarse){
+  #topbar{
+    height:auto; min-height:54px; padding:8px 10px;
+    padding-top:calc(8px + env(safe-area-inset-top));
+    gap:8px; flex-wrap:nowrap;
+  }
+  .brand{ gap:8px; min-width:0; }
+  .brand-cn{ font-size:15px; letter-spacing:.06em; text-indent:0; white-space:nowrap; }
+  .brand-en{ display:none; }
+  .crumbs{ display:none; }
+  .search-wrap{ display:none; }
+  #btn-data{ display:none; }
+  #btn-about{ display:none; }
+  .btn-touch{ display:inline-flex; align-items:center; justify-content:center; }
+  .tools{ margin-left:auto; gap:6px; flex-wrap:nowrap; }
+  .btn{ height:34px; padding:0 10px; font-size:11px; letter-spacing:.04em; white-space:nowrap; }
+  .icon-btn{ min-width:34px; height:34px; }
+  #intro h1{ font-size:clamp(28px, 10.5vw, 48px); letter-spacing:.10em; }
+  .intro-kicker{ font-size:9px; letter-spacing:.26em; }
+  #intro p{ font-size:11px; letter-spacing:.16em; }
+  #hint{ font-size:8px; gap:6px; white-space:nowrap; bottom:calc(10px + env(safe-area-inset-bottom)); letter-spacing:.08em; }
+  #hint i{ display:none; }
+  .reader-shell{ width:100vw; height:100vh; border-radius:0; grid-template-columns:1fr; }
+  .reader-nav{ display:none; }
+  .reader-top{ padding:16px 16px 12px; }
+  #rt-title{ font-size:22px; }
+  .reader-scroll{ padding:16px 16px 56px; }
+  .about-card, .data-card{ width:calc(100vw - 24px); max-height:calc(100vh - 40px); padding:24px 20px; }
+  #atlas{ width:min(92vw, 420px); }
+  .nebula-card{ transform-origin:center top; width:150px; margin-left:-75px; }
+  .nebula-card .nc-cn{ font-size:16px; letter-spacing:.18em; }
+  .nebula-card .nc-en{ font-size:7px; letter-spacing:.24em; }
+  .nebula-card .nc-meta{ font-size:7.5px; letter-spacing:.04em; }
+  .nebula-card .nc-idx{ font-size:8px; letter-spacing:.22em; }
+  .nebula-card .nc-cta{ display:none; }
+  .nebula-card .nc-rule{ display:none; }
+}
+
+@media (max-width:380px){
+  #btn-atlas{ display:none; }
+  .brand-cn{ font-size:13px; }
+}

@@ -145,7 +145,9 @@
         }
         el.style.pointerEvents = 'auto';
         el.style.opacity = '';
-        el.style.left = s.x + 'px';
+        const halfW = (el.offsetWidth || 140) / 2;
+        const vw = window.innerWidth || 1200;
+        el.style.left = Math.min(Math.max(s.x, halfW + 8), vw - halfW - 8) + 'px';
         const scrH = (window.screen && window.screen.height) ? window.screen.height : 1e9;
         const syPos = window.screenY || 0;
         const outerH = window.outerHeight || 0;
@@ -494,6 +496,15 @@
       $('#btn-pick-folder').addEventListener('click', () => $('#pick-folder').click());
       $('#btn-pick-json').addEventListener('click', () => $('#pick-json').click());
       $('#btn-pick-files').addEventListener('click', () => $('#pick-files').click());
+      $('#btn-add-file').addEventListener('click', () => $('#pick-files').click());
+      $('#btn-add-folder').addEventListener('click', () => {
+        if (/Android/i.test(navigator.userAgent)) {
+          this.toast('安卓不支持选文件夹，已切换为多选文件');
+          $('#pick-files').click();
+          return;
+        }
+        $('#pick-folder').click();
+      });
 
       $('#pick-files').addEventListener('change', async (e) => {
         const files = e.target.files;
