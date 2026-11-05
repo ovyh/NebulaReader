@@ -9,6 +9,16 @@
 本仓库**只开源可视化程序本身**，不包含任何第三方剧情文本。你需要导入自己的 `.txt` 目录、
 JSON 数据包，或填写自己的远程数据地址。
 
+## 下载
+
+| 平台 | 直接下载 | 说明 |
+| --- | --- | --- |
+| **Android** | [NebulaTextReader-v1.0.0.apk](https://github.com/ovyh/NebulaTextReader/releases/latest/download/NebulaTextReader-v1.0.0.apk) | 2.3 MB · 正式签名，安装即用 |
+| **Windows** | [NebulaTextReader-v1.0.0-setup.exe](https://github.com/ovyh/NebulaTextReader/releases/latest/download/NebulaTextReader-v1.0.0-setup.exe) | 1.5 MB · 双击自解压并启动 |
+| Windows / macOS / Linux | [NebulaTextReader-v1.0.0.zip](https://github.com/ovyh/NebulaTextReader/releases/latest/download/NebulaTextReader-v1.0.0.zip) | 5.2 MB · 解压后双击启动脚本 |
+
+全部版本与更新记录见 [Releases](https://github.com/ovyh/NebulaTextReader/releases)。
+
 ![星云之门](screenshots/00-overview.png)
 
 ---
