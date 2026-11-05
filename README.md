@@ -44,6 +44,16 @@ JSON 数据包，或填写自己的远程数据地址。
 - **iOS Safari**：分享 →「添加到主屏幕」
 
 从主屏幕图标启动就是全屏、无地址栏；首次加载后 Service Worker 会缓存外壳，**断网也能打开**。
+
+### Android APK
+
+仓库里带了一个极简 WebView 外壳（`android/`）和对应的 CI 工作流：
+
+- 从 Releases 下载 `NebulaTextReader-v1.0.0.apk`，安装后打开即可；
+- debug 签名，安装时需要允许「安装未知应用」；
+- 手机上没有「选择文件夹」，用「数据」→「选择 txt 文件（手机）」多选导入；
+- 自己构建：`cd android && gradle assembleDebug`（需要 JDK 17 + Android SDK 34）；
+- 每次推送 `v*` 标签或手动触发 `android-apk` 工作流都会重新产出 APK。
 手机导入文本：右上角「数据」→「选择 txt 文件（手机）」，可一次多选；分组按文件名前缀匹配 `js/config.js` 里的 `match`。
 
 ---
