@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    星云文本阅读 · 数据源
    ------------------------------------------------------------
    支持三种方式载入你自己的文本：
@@ -153,21 +153,33 @@
     return finalize(groups, docs);
   };
 
-  /* ---------------- 本地文件夹 ---------------- */
+  /* ---------------- 本地文件 / 文件夹 ---------------- */
+  // 文件夹导入用目录名分组；手机多选没有目录信息，则按文件名前缀匹配配置里的分组
+  function folderOf(f, rootName) {
+    const rel = f.webkitRelativePath || '';
+    if (rel) {
+      const parts = rel.split('/');
+      if (parts.length > 2) return parts[parts.length - 2];
+      return parts.length === 2 ? rootName : '全部';
+    }
+    const base = f.name.replace(/\.txt$/i, '');
+    const cfg = (SY.CONFIG.nebulae || []).find((n) =>
+      (n.match || []).some((m) => base.indexOf(m) === 0) || (n.cn && base.indexOf(n.cn) === 0));
+    return cfg ? cfg.cn : '全部';
+  }
+
   DS.fromFiles = async function (fileList, onProgress) {
     const files = Array.from(fileList).filter((f) => /\.txt$/i.test(f.name) || /text\/plain/.test(f.type));
     if (!files.length) throw new Error('没有找到 .txt 文本文件');
     files.sort((a, b) => natSort(a.webkitRelativePath || a.name, b.webkitRelativePath || b.name));
 
-    // 以“文件所在文件夹”为分组；若都直接位于根目录，则归为“全部”
     const rootName = (() => {
       const p = files[0].webkitRelativePath || '';
       return p ? p.split('/')[0] : '';
     })();
     const folderNames = [];
     files.forEach((f) => {
-      const p = (f.webkitRelativePath || '').split('/');
-      const folder = p.length > 2 ? p[p.length - 2] : (p.length === 2 ? rootName : '全部');
+      const folder = folderOf(f, rootName);
       if (folderNames.indexOf(folder) < 0) folderNames.push(folder);
     });
 
@@ -178,9 +190,7 @@
     const docs = [];
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
-      const p = (f.webkitRelativePath || '').split('/');
-      const folder = p.length > 2 ? p[p.length - 2] : (p.length === 2 ? rootName : '全部');
-      const g = byFolder[folder];
+      const g = byFolder[folderOf(f, rootName)];
       const no = docs.filter((d) => d.g === g.id).length + 1;
       let raw = '';
       try { raw = await f.text(); } catch (e) { continue; }

@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    星云文本阅读 · boot & main loop
    ============================================================ */
 (function () {
@@ -138,6 +138,12 @@
     requestAnimationFrame(loop);
   }
 
+  /* PWA：仅在 http(s) 下注册 Service Worker（file:// 不支持） */
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch((e) => console.warn('[PWA] SW 注册失败', e));
+    });
+  }
   window.addEventListener('error', (e) => {
     console.error('[星云文本阅读] window error', e.message);
   });

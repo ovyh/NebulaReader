@@ -1,0 +1,62 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'io.nebula.reader'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'io.nebula.reader'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix ''
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // 把仓库根目录的 Web 资源合并进 APK 的 assets
+    def webAssets = layout.buildDirectory.dir('webassets').get().asFile
+    sourceSets {
+        main {
+            assets.srcDirs += webAssets
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.9.0'
+}
+
+def webRoot = rootProject.file('..')
+
+tasks.register('copyWebAssets', Copy) {
+    from(webRoot) {
+        include 'index.html'
+        include 'manifest.webmanifest'
+        include 'sw.js'
+        include 'css/**'
+        include 'js/**'
+        include 'data/**'
+        include 'assets/**'
+    }
+    into layout.buildDirectory.dir('webassets')
+}
+
+tasks.named('preBuild') {
+    dependsOn 'copyWebAssets'
+}

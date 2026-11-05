@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    星云文本阅读 · UI layer
    ============================================================ */
 (function () {
@@ -493,6 +493,21 @@
 
       $('#btn-pick-folder').addEventListener('click', () => $('#pick-folder').click());
       $('#btn-pick-json').addEventListener('click', () => $('#pick-json').click());
+      $('#btn-pick-files').addEventListener('click', () => $('#pick-files').click());
+
+      $('#pick-files').addEventListener('change', async (e) => {
+        const files = e.target.files;
+        if (!files || !files.length) return;
+        this.dataProgress(0, '读取 ' + files.length + ' 个文件…');
+        try {
+          const ds = await SY.DataSource.fromFiles(files, (done, total, name) => {
+            this.dataProgress(done / total, '解析 ' + done + ' / ' + total + ' · ' + name);
+          });
+          await this.importDataset(ds);
+        } catch (err) {
+          this.dataError(err);
+        }
+      });
 
       $('#pick-folder').addEventListener('change', async (e) => {
         const files = e.target.files;

@@ -36,6 +36,16 @@ JSON 数据包，或填写自己的远程数据地址。
 > 环境要求：Windows / macOS / Linux + Chrome 或 Edge（需要 WebGL2）。
 > 直接双击 `index.html` 也能用，只是没有应用窗口。
 
+### 手机上使用（PWA）
+
+把整个目录放到任意 HTTPS 静态托管上（GitHub Pages 即可），或者本地跑 `node tools/serve.js 8099`：
+
+- **Android Chrome / Edge**：菜单 →「添加到主屏幕」
+- **iOS Safari**：分享 →「添加到主屏幕」
+
+从主屏幕图标启动就是全屏、无地址栏；首次加载后 Service Worker 会缓存外壳，**断网也能打开**。
+手机导入文本：右上角「数据」→「选择 txt 文件（手机）」，可一次多选；分组按文件名前缀匹配 `js/config.js` 里的 `match`。
+
 ---
 
 ## 数据从哪来

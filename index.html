@@ -5,6 +5,12 @@
 <title>星云文本阅读</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="stylesheet" href="css/app.css?v=20261106a">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#04060c">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="星云阅读">
 </head>
 <body>
 
@@ -118,6 +124,9 @@
       <button class="solid-btn" id="btn-pick-folder" type="button">选择文本文件夹</button>
       <button class="ghost-btn" id="btn-pick-json" type="button">选择 JSON 数据包</button>
     </div>
+    <div class="data-actions">
+      <button class="ghost-btn" id="btn-pick-files" type="button">选择 txt 文件（手机 / 单选多选）</button>
+    </div>
     <div class="data-remote">
       <input id="data-url" type="text" placeholder="https://…/data.json（需允许跨域）" spellcheck="false">
       <button class="ghost-btn" id="btn-load-url" type="button">载入</button>
@@ -134,6 +143,7 @@
 
 <input type="file" id="pick-folder" webkitdirectory directory multiple accept=".txt,text/plain" class="hidden">
 <input type="file" id="pick-json" accept=".json,application/json" class="hidden">
+<input type="file" id="pick-files" accept=".txt,text/plain" multiple class="hidden">
 
 <div id="loading">
   <div class="load-inner">
