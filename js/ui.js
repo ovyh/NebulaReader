@@ -715,8 +715,58 @@
       console.error('[数据源]', err);
     },
 
-    async importDataset(ds) {
+    /** 把新导入的数据合并到现有数据集：同路径覆盖，否则追加 */
+    mergeDataset(incoming) {
+      const base = (!SY.isDemo && SY.data && SY.data.docs && SY.data.docs.length) ? SY.data : null;
+      if (!base) return incoming;
+
+      const groups = base.groups.map((g) => Object.assign({}, g));
+      const byCn = new Map(groups.map((g) => [g.cn, g]));
+      const idMap = new Map();
+      (incoming.groups || []).forEach((g) => {
+        const hit = byCn.get(g.cn);
+        if (hit) { idMap.set(g.id, hit.id); return; }
+        let gid = g.id || ('g' + (groups.length + 1));
+        while (groups.some((x) => x.id === gid)) gid = gid + '_' + (groups.length + 1);
+        idMap.set(g.id, gid);
+        groups.push(Object.assign({}, g, { id: gid }));
+      });
+
+      const keyOf = (d) => d.path || ((d.name || d.t || d.id) + '|' + ((d.meta && d.meta.fileSize) || 0));
+      const docs = base.docs.map((x) => { const c = Object.assign({}, x); delete c.mediaUrl; return c; });
+      const index = new Map(docs.map((x, i) => [keyOf(x), i]));
+
+      (incoming.docs || []).forEach((d) => {
+        const c = Object.assign({}, d);
+        c.g = idMap.get(d.g) || d.g;
+        const k = keyOf(c);
+        if (index.has(k)) docs[index.get(k)] = c;
+        else { index.set(k, docs.length); docs.push(c); }
+      });
+
+      const living = new Set(docs.map((d) => d.g));
+      const kept = groups.filter((g) => living.has(g.id));
+      kept.forEach((g) => { g.count = docs.filter((d) => d.g === g.id).length; });
+
+      return {
+        version: 2,
+        createdAt: new Date().toISOString(),
+        groups: kept,
+        docs: docs,
+        totals: {
+          docs: docs.length,
+          chars: docs.reduce((a, d) => a + (d.w || 0), 0),
+          units: docs.reduce((a, d) => a + (d.units || 0), 0),
+          groups: kept.length
+        }
+      };
+    },
+
+    async importDataset(input) {
       this.dataProgress(0.9, '正在写入本地缓存…');
+      const before = (SY.isDemo || !SY.data) ? 0 : SY.data.docs.length;
+      const ds = this.mergeDataset(input);
+      const added = Math.max(0, ds.totals.docs - before);
       try {
         await SY.DataSource.save(ds);
       } catch (err) {
@@ -724,7 +774,7 @@
         this.dataError(new Error('无法写入本地缓存（IndexedDB 不可用）'), '导入的数据在刷新后会丢失');
         return;
       }
-      this.dataProgress(1, '完成 · ' + ds.totals.docs + ' 篇，正在重启…');
+      this.dataProgress(1, '完成 · 新增 ' + added + ' 个，共 ' + ds.totals.docs + ' 个，正在重启…');
       setTimeout(() => location.reload(), 600);
     },
 

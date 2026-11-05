@@ -10,7 +10,7 @@ using System.Windows.Forms;
 // 然后用系统浏览器以“无地址栏应用窗口”打开，并固定用户数据目录。
 public static class Launcher
 {
-    private const string AppVersion = "1.2.0";
+    private const string AppVersion = "1.2.1";
     private const string AppFolderName = "NebulaReader";
 
     [STAThread]

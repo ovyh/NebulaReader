@@ -13,7 +13,7 @@
     title: '星云阅读器',
     titleEn: 'NEBULA READER',
     tagline: '把你的文本，变成一片可以走进的星云。',
-    version: '1.2.0',
+    version: '1.2.1',
 
     /* 星云形态编号：0 螺旋星系 / 1 发射星云（花环）/ 2 环状星云 / 3 暗尘柱状星云 */
     nebulae: [

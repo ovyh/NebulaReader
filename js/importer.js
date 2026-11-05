@@ -221,6 +221,7 @@
       type: type,
       format: resolved.format,
       name: file.name,
+      path: file.webkitRelativePath || file.name,
       style: resolved.style,
       secondaryStyle: resolved.secondaryStyle || null,
       units: 0, mass: 0.1, temperature: 3000, color: '#ff5a3c', radius: 4,
