@@ -513,6 +513,20 @@ body.reading #hint, body.atlas-open #hint{ opacity:0; transform:translate(-50%,1
 .data-progress i{ display:block; height:100%; width:0; background:linear-gradient(90deg,#7fc4ff,#d9ecff); box-shadow:0 0 12px rgba(154,216,255,.8); transition:width .35s ease; }
 .data-hint{ font-size:11px; line-height:1.9; color:var(--dim-2); letter-spacing:.03em; }
 #data-close{ position:absolute; right:16px; top:16px; }
+
+/* ---------- 返回按钮 ---------- */
+#btn-back{
+  position:fixed; left:14px; top:80px; z-index:34;
+  display:inline-flex; align-items:center; justify-content:center;
+  height:36px; padding:0 16px 0 12px; border-radius:999px;
+  background:rgba(8,12,22,.72); border:1px solid var(--line);
+  color:var(--ink-soft); font-family:var(--sans); font-size:12px; letter-spacing:.16em;
+  cursor:pointer; backdrop-filter:blur(6px);
+  opacity:0; transform:translateX(-8px); pointer-events:none;
+  transition:opacity .35s ease, transform .35s ease, border-color .3s, color .3s;
+}
+#btn-back.is-on{ opacity:1; transform:none; pointer-events:auto; }
+#btn-back:hover{ border-color:rgba(154,216,255,.45); color:#eaf4ff; }
 /* ---------- 触摸与手机布局 ---------- */
 #space{ touch-action:none; }
 body{ overscroll-behavior:none; }
@@ -538,6 +552,7 @@ body{ overscroll-behavior:none; }
   #intro h1{ font-size:clamp(28px, 10.5vw, 48px); letter-spacing:.10em; }
   .intro-kicker{ font-size:9px; letter-spacing:.26em; }
   #intro p{ font-size:11px; letter-spacing:.16em; }
+  #btn-back{ top:calc(58px + env(safe-area-inset-top)); height:38px; }
   #hint{ font-size:8px; gap:6px; white-space:nowrap; bottom:calc(10px + env(safe-area-inset-bottom)); letter-spacing:.08em; }
   #hint i{ display:none; }
   .reader-shell{ width:100vw; height:100vh; border-radius:0; grid-template-columns:1fr; }

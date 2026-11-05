@@ -14,6 +14,19 @@
     return Promise.reject(new Error('这篇没有正文数据'));
   }
 
+  const COARSE = (window.matchMedia && window.matchMedia('(pointer:coarse)').matches)
+    || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+
+  function hintHtml(inside) {
+    if (inside) {
+      return COARSE
+        ? '<span>拖拽旋转</span><i></i><span>双指缩放</span><i></i><span>点「返回」退出</span>'
+        : '<span>拖拽旋转</span><i></i><span>滚轮推近</span><i></i><span>点击恒星阅读</span><i></i><span>Esc 返回星云</span>';
+    }
+    return COARSE
+      ? '<span>拖拽旋转</span><i></i><span>双指缩放</span><i></i><span>点击星云进入</span>'
+      : '<span>拖拽旋转</span><i></i><span>滚轮推近</span><i></i><span>点击星云，坠入其中</span>';
+  }
   const isSep = (l) => /^={8,}\s*$/.test(l);
 
   function parseDocText(raw) {
@@ -102,6 +115,7 @@
       this.bindGlobal();
       this.bindRenderer();
       this.renderAboutStats();
+      $("#hint").innerHTML = hintHtml(false);
       this.bindData();
       const t = index.totals || { docs: index.docs.length };
       $('#search').placeholder = '搜索 ' + t.docs + ' 篇文本';
@@ -424,14 +438,14 @@
           this.tipDoc = null;
           $('#tooltip').classList.remove('is-on');
           $('#star-ring').classList.remove('is-on');
-          hint.innerHTML = '<span>拖拽旋转</span><i></i><span>滚轮推近</span><i></i><span>点击恒星阅读</span><i></i><span>Esc 返回星云</span>';
+          hint.innerHTML = hintHtml(true);
         } else {
           document.body.classList.remove('mode-inside');
           $('#crumb-nebula').textContent = '四重星云';
           $('#crumb-nebula').classList.remove('is-on');
           document.title = SY.CONFIG.title;
           this.closeReader();
-          hint.innerHTML = '<span>拖拽旋转</span><i></i><span>滚轮推近</span><i></i><span>点击星云，坠入其中</span>';
+          hint.innerHTML = hintHtml(false);
         }
       };
     },
@@ -471,10 +485,12 @@
         $('#about').classList.remove('hidden');
         document.body.classList.add('atlas-open');
       });
-      $('#about-close').addEventListener('click', () => {
-        $('#about').classList.add('hidden');
-        document.body.classList.remove('atlas-open');
-      });
+      $('#about-close').addEventListener('click', () => this.closeAbout());
+    },
+
+    closeAbout() {
+      $('#about').classList.add('hidden');
+      document.body.classList.remove('atlas-open');
     },
 
     /* ---------------- data source ---------------- */
@@ -485,10 +501,7 @@
         document.body.classList.add('atlas-open');
         this.updateDataStatus();
       };
-      const close = () => {
-        panel.classList.add('hidden');
-        document.body.classList.remove('atlas-open');
-      };
+      const close = () => this.closeData();
       $('#btn-data').addEventListener('click', open);
       $('#data-close').addEventListener('click', close);
       panel.addEventListener('click', (e) => { if (e.target === panel) close(); });
@@ -572,6 +585,12 @@
       });
     },
 
+    closeData() {
+      const panel = $('#data-panel');
+      if (panel) panel.classList.add('hidden');
+      document.body.classList.remove('atlas-open');
+    },
+
     updateDataStatus() {
       const el = $('#data-status');
       const t = this.index.totals || { docs: this.index.docs.length, chars: 0 };
@@ -607,17 +626,34 @@
     },
 
     /* ---------------- global keys ---------------- */
+    /* 统一的返回逻辑：先关浮层，再退出星云，最后才是退出应用 */
+    goBack() {
+      if (this.reader.open) { this.closeReader(); return true; }
+      if (!$('#data-panel').classList.contains('hidden')) { this.closeData(); return true; }
+      if (!$('#about').classList.contains('hidden')) { this.closeAbout(); return true; }
+      if ($('#atlas').classList.contains('is-open')) { this.closeAtlas(); return true; }
+      if (this.r.mode === 'inside' && !this.r.trans) { this.r.surface(); return true; }
+      return false;
+    },
+
+    updateBackButton() {
+      const el = $('#btn-back');
+      if (!el) return;
+      const show = !this.reader.open && (
+        this.r.mode !== 'galaxy' ||
+        $('#atlas').classList.contains('is-open') ||
+        !$('#data-panel').classList.contains('hidden') ||
+        !$('#about').classList.contains('hidden')
+      );
+      el.classList.toggle('is-on', show);
+      el.classList.toggle('hidden', false);
+    },
+
     bindGlobal() {
+      $('#btn-back').addEventListener('click', () => this.goBack());
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-          if (this.reader.open) { this.closeReader(); e.preventDefault(); return; }
-          if (!$('#about').classList.contains('hidden')) {
-            $('#about').classList.add('hidden');
-            document.body.classList.remove('atlas-open');
-            return;
-          }
-          if ($('#atlas').classList.contains('is-open')) { this.closeAtlas(); return; }
-          if (this.r.mode === 'inside' && !this.r.trans) { this.r.surface(); }
+          if (this.goBack()) e.preventDefault();
         } else if (e.key === '/' && !this.reader.open) {
           e.preventDefault();
           $('#search').focus();
@@ -654,6 +690,7 @@
     },
 
     update() {
+      this.updateBackButton();
       if (this.r.mode === 'galaxy' && !this.r.trans) this.updateCards();
       if (this.r.trans && this.r.trans.dir === 'in') {
         this.cards.forEach((el) => { el.style.opacity = '0'; });

@@ -114,14 +114,11 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        // 阅读器 / 面板打开时先关它们，否则退出应用
+        // 交给页面统一的返回逻辑：关浮层 → 退出星云 → 都没有才退出应用
         web.evaluateJavascript(
-                "(window.SY && SY.UI && SY.UI.reader && SY.UI.reader.open) ? '1' : '0'",
+                "(window.SY && SY.UI && SY.UI.goBack) ? String(SY.UI.goBack()) : 'false'",
                 value -> {
-                    if ("\"1\"".equals(value)) {
-                        web.evaluateJavascript(
-                                "document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))", null);
-                    } else {
+                    if (!"\"true\"".equals(value)) {
                         finish();
                     }
                 });
