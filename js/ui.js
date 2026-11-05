@@ -14,16 +14,18 @@
     return Promise.reject(new Error('这篇没有正文数据'));
   }
 
-  const COARSE = (window.matchMedia && window.matchMedia('(pointer:coarse)').matches)
-    || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+  function isCoarse() {
+    return (window.matchMedia && window.matchMedia('(pointer:coarse)').matches)
+      || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+  }
 
   function hintHtml(inside) {
     if (inside) {
-      return COARSE
+      return isCoarse()
         ? '<span>拖拽旋转</span><i></i><span>双指缩放</span><i></i><span>点「返回」退出</span>'
         : '<span>拖拽旋转</span><i></i><span>滚轮推近</span><i></i><span>点击恒星阅读</span><i></i><span>Esc 返回星云</span>';
     }
-    return COARSE
+    return isCoarse()
       ? '<span>拖拽旋转</span><i></i><span>双指缩放</span><i></i><span>点击星云进入</span>'
       : '<span>拖拽旋转</span><i></i><span>滚轮推近</span><i></i><span>点击星云，坠入其中</span>';
   }
