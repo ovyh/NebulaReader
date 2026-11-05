@@ -20,7 +20,7 @@
       {
         id: 'g1', group: 'g1', type: 0,
         cn: '卷一 · 启程', en: 'VOLUME I', tag: '螺旋星系 · 时间之轴',
-        center: [-4.95, 2.02, -2.30], radius: 1.40,
+        center: [-4.95, 2.34, -2.30], radius: 1.40,
         tiltX: 0.66, tiltZ: -0.34, spin: 0.030,
         accent: [0.62, 0.80, 1.00], accentCss: '#9ec9ff',
         match: ['卷一', '卷一 · 启程', '启程']
@@ -28,7 +28,7 @@
       {
         id: 'g2', group: 'g2', type: 1,
         cn: '卷二 · 群像', en: 'VOLUME II', tag: '发射星云 · 群像',
-        center: [4.90, 1.98, -1.10], radius: 1.50,
+        center: [4.90, 2.26, -1.10], radius: 1.50,
         tiltX: 0.82, tiltZ: 0.20, spin: -0.018,
         accent: [1.00, 0.58, 0.72], accentCss: '#ff9bb0',
         match: ['卷二', '卷二 · 群像', '群像']
@@ -36,7 +36,7 @@
       {
         id: 'g3', group: 'g3', type: 2,
         cn: '卷三 · 回声', en: 'VOLUME III', tag: '环状星云 · 回声',
-        center: [-4.70, -1.74, 1.70], radius: 1.28,
+        center: [-4.70, -2.26, 1.70], radius: 1.28,
         tiltX: 0.42, tiltZ: 0.30, spin: 0.036,
         accent: [0.45, 0.95, 1.00], accentCss: '#7fe9f2',
         match: ['卷三', '卷三 · 回声', '回声']
@@ -44,7 +44,7 @@
       {
         id: 'g4', group: 'g4', type: 3,
         cn: '卷四 · 焰', en: 'VOLUME IV', tag: '暗尘星云 · 焰',
-        center: [4.78, -1.78, 2.10], radius: 1.42,
+        center: [4.78, -2.30, 2.10], radius: 1.42,
         tiltX: 0.22, tiltZ: -0.14, spin: -0.024,
         accent: [1.00, 0.70, 0.44], accentCss: '#ffb479',
         match: ['卷四', '卷四 · 焰', '焰']

@@ -152,7 +152,7 @@
         const chrome = Math.max(0, outerH - (window.innerHeight || 0));
         const off = chrome > 20 && syPos + outerH > scrH + 8;
         const vh = off ? Math.max(320, scrH - Math.max(syPos, 0)) : (window.innerHeight || 800);
-        const top = Math.min(Math.max(s.y + s.r * 0.98, 96), vh - 108);
+        const top = Math.min(Math.max(s.y + s.r * 0.92, 96), vh - 104);
         el.style.top = top + 'px';
         el.classList.toggle('is-on', !!window.SY.readyForLabels && (!this.r.trans || this.r.trans.dir === 'out'));
         el.classList.toggle('is-dim', this.r.hoverNebula >= 0 && this.r.hoverNebula !== i);

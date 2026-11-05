@@ -18,3 +18,7 @@ node_modules/
 # 临时脚本
 tools/_*.js
 
+
+# 打包产物
+dist/
+
