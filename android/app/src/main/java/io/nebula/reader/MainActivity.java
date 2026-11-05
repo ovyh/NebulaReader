@@ -17,7 +17,7 @@ import android.webkit.WebViewClient;
 import androidx.webkit.WebViewAssetLoader;
 
 /**
- * 星云文本阅读 · Android 外壳
+ * 星云阅读器 · Android 外壳
  * 用 WebView 加载打包进 assets 的 Web 应用；通过 WebViewAssetLoader 以 https 源提供，
  * 这样 IndexedDB / localStorage / Service Worker 都有正常的源。
  */

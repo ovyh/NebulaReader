@@ -1,5 +1,5 @@
-# 星云文本阅读
-### NEBULA TEXT READER
+# 星云阅读器
+### NEBULA READER
 
 > 把你的文本，变成一片可以走进的星云。
 
@@ -13,11 +13,11 @@ JSON 数据包，或填写自己的远程数据地址。
 
 | 平台 | 直接下载 | 说明 |
 | --- | --- | --- |
-| **Android** | [NebulaTextReader-v1.0.0.apk](https://github.com/ovyh/NebulaTextReader/releases/latest/download/NebulaTextReader-v1.0.0.apk) | 2.3 MB · 正式签名，安装即用 |
-| **Windows** | [NebulaTextReader-v1.0.0-setup.exe](https://github.com/ovyh/NebulaTextReader/releases/latest/download/NebulaTextReader-v1.0.0-setup.exe) | 1.5 MB · 双击自解压并启动 |
-| Windows / macOS / Linux | [NebulaTextReader-v1.0.0.zip](https://github.com/ovyh/NebulaTextReader/releases/latest/download/NebulaTextReader-v1.0.0.zip) | 5.2 MB · 解压后双击启动脚本 |
+| **Android** | [NebulaReader-v1.0.0.apk](https://github.com/ovyh/NebulaReader/releases/latest/download/NebulaReader-v1.0.0.apk) | 2.3 MB · 正式签名，安装即用 |
+| **Windows** | [NebulaReader-v1.0.0-setup.exe](https://github.com/ovyh/NebulaReader/releases/latest/download/NebulaReader-v1.0.0-setup.exe) | 1.5 MB · 双击自解压并启动 |
+| Windows / macOS / Linux | [NebulaReader-v1.0.0.zip](https://github.com/ovyh/NebulaReader/releases/latest/download/NebulaReader-v1.0.0.zip) | 5.2 MB · 解压后双击启动脚本 |
 
-全部版本与更新记录见 [Releases](https://github.com/ovyh/NebulaTextReader/releases)。
+全部版本与更新记录见 [Releases](https://github.com/ovyh/NebulaReader/releases)。
 
 ![星云之门](screenshots/00-overview.png)
 
@@ -37,8 +37,8 @@ JSON 数据包，或填写自己的远程数据地址。
 
 ## 快速开始
 
-1. 双击 **`星云文本阅读.lnk`**（无地址栏的应用窗口）；
-   若被系统拦截，双击 **`启动星云文本阅读.bat`** 用默认浏览器打开。
+1. 双击 **`星云阅读器.lnk`**（无地址栏的应用窗口）；
+   若被系统拦截，双击 **`启动星云阅读器.bat`** 用默认浏览器打开。
 2. 首次打开显示的是**示例数据**（12 篇原创短篇）。
 3. **点击右上角「数据」**，导入你自己的文本文件夹（`.txt`），或载入 JSON / 远程地址。
 4. 关闭后再次打开，会自动恢复上次导入的数据。
@@ -59,7 +59,7 @@ JSON 数据包，或填写自己的远程数据地址。
 
 仓库里带了一个极简 WebView 外壳（`android/`）和对应的 CI 工作流：
 
-- 从 Releases 下载 `NebulaTextReader-v1.0.0.apk`，安装后打开即可；
+- 从 Releases 下载 `NebulaReader-v1.0.0.apk`，安装后打开即可；
 - 正式签名（v1 + v2，独立密钥库），安装时需要允许「安装未知应用」；
 - 手机上没有「选择文件夹」，用「数据」→「选择 txt 文件（手机）」多选导入；
 - 自己构建：`cd android && gradle assembleDebug`（需要 JDK 17 + Android SDK 34）；
@@ -100,9 +100,9 @@ JSON 数据包，或填写自己的远程数据地址。
 ## 目录结构
 
 ```
-星云文本阅读/
-├─ 星云文本阅读.lnk        ← 启动快捷方式
-├─ 启动星云文本阅读.bat    ← 备用启动器
+星云阅读器/
+├─ 星云阅读器.lnk        ← 启动快捷方式
+├─ 启动星云阅读器.bat    ← 备用启动器
 ├─ index.html              ← 应用入口
 ├─ 教程.md                 ← 使用 / 数据格式 / 二次开发（含「新增一片大星云」）
 ├─ LICENSE                 ← MIT

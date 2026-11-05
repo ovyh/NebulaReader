@@ -1,5 +1,5 @@
 /* ============================================================
-   星云文本阅读 · boot & main loop
+   星云阅读器 · boot & main loop
    ============================================================ */
 (function () {
   'use strict';
@@ -37,7 +37,7 @@
         st.innerHTML = '<span style="color:#ff9a9a">' + msg + '</span><br><span style="opacity:.6;font-size:9px;letter-spacing:.14em">请使用支持 WebGL2 的 Chrome / Edge 浏览器，并确认显卡驱动已启用硬件加速。</span>';
       }
     }
-    console.error('[星云文本阅读]', msg);
+    console.error('[星云阅读器]', msg);
   }
 
   async function boot() {
@@ -146,7 +146,7 @@
     });
   }
   window.addEventListener('error', (e) => {
-    console.error('[星云文本阅读] window error', e.message);
+    console.error('[星云阅读器] window error', e.message);
   });
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {

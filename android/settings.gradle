@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "NebulaTextReader"
+rootProject.name = "NebulaReader"
 include ':app'

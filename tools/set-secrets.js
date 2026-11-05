@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const sodium = require('libsodium-wrappers');
 
-const REPO = process.env.GH_REPO || 'ovyh/NebulaTextReader';
+const REPO = process.env.GH_REPO || 'ovyh/NebulaReader';
 const TOKEN = process.env.GH_TOKEN;
 const API = 'https://api.github.com';
 const KS = process.env.KS_PATH;

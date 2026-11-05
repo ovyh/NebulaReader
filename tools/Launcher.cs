@@ -5,13 +5,13 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Windows.Forms;
 
-// 星云文本阅读 · Windows 单文件启动器
-// 首次运行把内嵌的 app.zip 解压到 %LOCALAPPDATA%\NebulaTextReader\app，
+// 星云阅读器 · Windows 单文件启动器
+// 首次运行把内嵌的 app.zip 解压到 %LOCALAPPDATA%\NebulaReader\app，
 // 然后用系统浏览器以“无地址栏应用窗口”打开，并固定用户数据目录。
 public static class Launcher
 {
     private const string AppVersion = "1.0.0";
-    private const string AppFolderName = "NebulaTextReader";
+    private const string AppFolderName = "NebulaReader";
 
     [STAThread]
     public static void Main()
@@ -24,7 +24,7 @@ public static class Launcher
             string index = Path.Combine(appDir, "index.html");
             if (!File.Exists(index))
             {
-                MessageBox.Show("应用文件缺失，请重新下载安装包。", "星云文本阅读",
+                MessageBox.Show("应用文件缺失，请重新下载安装包。", "星云阅读器",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
@@ -32,7 +32,7 @@ public static class Launcher
             string browser = FindBrowser();
             if (browser == null)
             {
-                MessageBox.Show("没有找到 Chrome 或 Edge，请先安装其中一个浏览器。", "星云文本阅读",
+                MessageBox.Show("没有找到 Chrome 或 Edge，请先安装其中一个浏览器。", "星云阅读器",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
@@ -54,7 +54,7 @@ public static class Launcher
         catch (Exception ex)
         {
             Log("error: " + ex);
-            MessageBox.Show("启动失败：" + ex.ToString(), "星云文本阅读",
+            MessageBox.Show("启动失败：" + ex.ToString(), "星云阅读器",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
@@ -71,9 +71,16 @@ public static class Launcher
 
     private static string BaseDir()
     {
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            AppFolderName);
+        string root = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        string dir = Path.Combine(root, AppFolderName);
+        // 旧版本目录名迁移（保留已导入的数据）
+        string legacy = Path.Combine(root, "NebulaTextReader");
+        try
+        {
+            if (!Directory.Exists(dir) && Directory.Exists(legacy)) Directory.Move(legacy, dir);
+        }
+        catch { }
+        return dir;
     }
 
     private static string EnsurePayload()
@@ -143,7 +150,7 @@ public static class Launcher
             string exe = Assembly.GetExecutingAssembly().Location;
             string link = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-                "星云文本阅读.lnk");
+                "星云阅读器.lnk");
 
             if (File.Exists(link)) return;
 
@@ -158,7 +165,7 @@ public static class Launcher
                 new object[] { Path.GetDirectoryName(exe) });
             t.InvokeMember("IconLocation", BindingFlags.SetProperty, null, shortcut, new object[] { exe + ",0" });
             t.InvokeMember("Description", BindingFlags.SetProperty, null, shortcut,
-                new object[] { "星云文本阅读 · NEBULA TEXT READER" });
+                new object[] { "星云阅读器 · NEBULA READER" });
             t.InvokeMember("Save", BindingFlags.InvokeMethod, null, shortcut, null);
         }
         catch
